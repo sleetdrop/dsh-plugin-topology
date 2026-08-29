@@ -1,0 +1,100 @@
+.graphBox {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.graphViewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  cursor: grab;
+  background: #ffffff;
+  border: 1px solid var(--dsw-border, #cbd5e1);
+  border-radius: 8px;
+}
+
+.graphViewport:active {
+  cursor: grabbing;
+}
+
+.graphImg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Compact floating pill: fit / zoom-out / zoom-level / zoom-in. */
+.zoomControls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--dsw-border, #cbd5e1);
+  border-radius: 8px;
+  background: var(--dsw-surface, #ffffff);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.08);
+}
+
+.zoomControls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-text-secondary, #64748b);
+  cursor: pointer;
+}
+
+.zoomControls button:hover {
+  color: var(--dsw-text-primary, #0f172a);
+  border-color: var(--dsw-border, #cbd5e1);
+}
+
+.zoomControls .iconButton {
+  width: 24px;
+  height: 24px;
+}
+
+/* Zoom-out / zoom-in hide (collapse) when the view rests at fit. */
+.zoomControls .zoomButton {
+  transition: opacity 0.15s ease, width 0.15s ease;
+}
+
+.zoomLevel {
+  min-width: 46px;
+  height: 22px;
+  padding: 0 4px;
+  font-size: 11px;
+  line-height: 1;
+  text-align: center;
+  color: var(--dsw-text-secondary, #64748b);
+  transition: opacity 0.15s ease, width 0.15s ease;
+}
+
+.zoomLevel:hover {
+  color: var(--dsw-text-primary, #0f172a);
+}
+
+.zoomControls.collapsed .zoomButton,
+.zoomControls.collapsed .zoomLevel {
+  width: 0;
+  height: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
