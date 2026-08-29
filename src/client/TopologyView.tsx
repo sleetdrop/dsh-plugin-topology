@@ -30,7 +30,7 @@ export type TopologyViewProps = {
 
 type ViewState =
   | { readonly status: 'loading' }
-  | { readonly status: 'error' }
+  | { readonly status: 'error'; readonly message: string }
   | { readonly status: 'ready'; readonly analysis: TopologyAnalysis; readonly svg: string }
 
 interface MetricRow { readonly label: string; readonly value: string; readonly warning?: boolean; readonly expandable?: boolean }
@@ -120,7 +120,11 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     let current = true
     void Promise.all([analyze(), render('svg', rankdir)]).then(
       ([analysis, svg]) => { if (current) setState({ status: 'ready', analysis, svg }) },
-      () => { if (current) setState({ status: 'error' }) },
+      (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error)
+        console.error('[plugin-topology] load failed:', error)
+        if (current) setState({ status: 'error', message })
+      },
     )
     return () => { current = false }
   }, [request, rankdir, analyze, render])
@@ -143,6 +147,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
       {state.status === 'error' ? (
         <div className={css.failure}>
           <p className={css.status} role="alert">{t('error')}</p>
+          <pre className={css.errorDetail}>{state.message}</pre>
           <OutlineButton onClick={retry}>{t('retry')}</OutlineButton>
         </div>
       ) : null}

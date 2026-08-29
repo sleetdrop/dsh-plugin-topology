@@ -1,7 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { IconCloseOutline16, IconPluginOutline16 } from './icons.tsx'
-import { useDismissOnOutsidePointer } from './useDismissOnOutsidePointer.ts'
+import { IconCloseOutline16, IconFullscreenOutline16, IconPluginOutline16 } from './icons.tsx'
 import { TopologyView, type TopologyViewInjected, type ViewerStateSelector } from './TopologyView.tsx'
 import type { PluginTopologyLocaleKey } from './locales.ts'
 import css from './panel.module.css'
@@ -21,27 +20,25 @@ export function TopologyPanel({
 }: TopologyPanelProps): ReactNode {
   const rootRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
-  const [anchor, setAnchor] = useState<{ left: number; bottom: number }>()
+  const [maximized, setMaximized] = useState(false)
 
-  // The panel is position: fixed (the sidebar clips overflow), so it hugs the
-  // trigger through a measured offset instead of document flow.
-  useLayoutEffect(() => {
+  // Close on outside pointer; mounted only while open, so the listener
+  // lifetime is the panel's.
+  useEffect(() => {
     if (!open) return
-    const place = (): void => {
-      const rect = rootRef.current?.getBoundingClientRect()
-      if (rect !== undefined) {
-        setAnchor({ left: rect.left, bottom: window.innerHeight - rect.top + 8 })
+    const onDown = (event: PointerEvent): void => {
+      const root = rootRef.current
+      if (root === null) return
+      const panel = root.querySelector('[data-plugin-topology-panel]')
+      if (event.target instanceof Node && panel !== null && !panel.contains(event.target)) {
+        setOpen(false)
       }
     }
-    place()
-    window.addEventListener('resize', place)
-    return () => { window.removeEventListener('resize', place) }
+    document.addEventListener('pointerdown', onDown)
+    return () => { document.removeEventListener('pointerdown', onDown) }
   }, [open])
 
-  useDismissOnOutsidePointer(rootRef, open, setOpen)
-
-  // Escape closes the panel; mounted only while open, so the listener lifetime
-  // is the panel's.
+  // Escape closes the panel.
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent): void => {
@@ -52,7 +49,7 @@ export function TopologyPanel({
   }, [open])
 
   return (
-    <div ref={rootRef} className={wide === true ? css.layer : `${css.layer} ${css.rail}`}>
+    <div ref={rootRef} className={css.layer}>
       <button
         type="button"
         className={css.trigger}
@@ -63,13 +60,30 @@ export function TopologyPanel({
         <IconPluginOutline16 size={wide === true ? 16 : 18} />
         {wide === true && <span className={css.triggerLabel}>{t('title')}</span>}
       </button>
-      {open && anchor !== undefined && (
-        <section className={css.panel} style={anchor} data-plugin-topology-panel="" role="dialog" aria-modal="true" aria-label={t('title')}>
+      {open && (
+        <section
+          className={maximized ? `${css.panel} ${css.maximized}` : css.panel}
+          data-plugin-topology-panel=""
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('title')}
+        >
           <header className={css.header}>
             <span className={css.title}>{t('title')}</span>
-            <button type="button" className={css.close} aria-label={t('title')} onClick={() => { setOpen(false) }}>
-              <IconCloseOutline16 size={14} />
-            </button>
+            <div className={css.headerActions}>
+              <button
+                type="button"
+                className={css.close}
+                aria-label={t('resetView')}
+                title={t('resetView')}
+                onClick={() => { setMaximized(value => !value) }}
+              >
+                <IconFullscreenOutline16 size={14} />
+              </button>
+              <button type="button" className={css.close} aria-label={t('title')} onClick={() => { setOpen(false) }}>
+                <IconCloseOutline16 size={14} />
+              </button>
+            </div>
           </header>
           <div className={css.body}>
             <TopologyView

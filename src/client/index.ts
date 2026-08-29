@@ -52,7 +52,13 @@ export function apply(ctx: ClientContext): void {
   // yields, so teardown unmounts it. Inject order guarantees `ctx.remote` is
   // available; the namespace is reached by the panel callbacks only after the
   // user opens it, by which time the mount has settled.
-  ctx.effect(() => ctx.remote.$mount(topologyRemote), 'ui-plugin-topology: mount remote contribution')
+  ctx.effect(() => ctx.remote.$mount(topologyRemote).then(
+    dispose => dispose,
+    (error: unknown) => {
+      console.error('[plugin-topology] remote contribution mount failed:', error)
+      return () => {}
+    },
+  ), 'ui-plugin-topology: mount remote contribution')
 
   const t = ctx.locale.bind(NS)
   const viewerStore = createTopologyViewStore()

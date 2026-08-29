@@ -22,6 +22,21 @@
   gap: var(--dsw-space-2, 8px);
 }
 
+.errorDetail {
+  margin: 0;
+  max-width: 100%;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--dsw-surface-hover, #f1f5f9);
+  font-family: var(--ds-font-family-code, monospace);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--dsw-alias-state-error-primary, #dc2626);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 .toolbar {
   display: flex;
   align-items: center;

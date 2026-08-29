@@ -43,8 +43,11 @@
 
 .panel {
   position: fixed;
-  width: min(760px, calc(100vw - 48px));
-  height: min(620px, calc(100vh - 96px));
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(840px, calc(100vw - 48px));
+  height: min(680px, calc(100vh - 48px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -55,6 +58,11 @@
   z-index: 30;
 }
 
+.maximized {
+  width: calc(100vw - 32px);
+  height: calc(100vh - 32px);
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -63,6 +71,12 @@
   padding: 10px 14px;
   border-bottom: 1px solid var(--dsw-border, #cbd5e1);
   background: var(--dsw-surface, #ffffff);
+}
+
+.headerActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .title {
