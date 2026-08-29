@@ -20,7 +20,8 @@ export function TopologyPanel({
 }: TopologyPanelProps): ReactNode {
   const rootRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
-  const [maximized, setMaximized] = useState(false)
+  // Open maximized by default: the Graphviz canvas needs the space.
+  const [maximized, setMaximized] = useState(true)
 
   // Close on outside pointer; mounted only while open, so the listener
   // lifetime is the panel's.
