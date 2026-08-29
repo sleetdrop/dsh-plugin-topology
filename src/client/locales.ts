@@ -52,7 +52,7 @@ export const en: Record<PluginTopologyLocaleKey, string> = {
   legendLabel: 'Legend',
   legendUnresolved: 'Unresolved dependency',
   legendIsolated: 'Isolated plugin',
-  legendId: 'Plugin id',
+  legendId: 'Instance creation ordinal within this run',
 }
 
 export const zh: Record<PluginTopologyLocaleKey, string> = {
@@ -80,5 +80,5 @@ export const zh: Record<PluginTopologyLocaleKey, string> = {
   legendLabel: '图例',
   legendUnresolved: '存在未解析依赖',
   legendIsolated: '孤立插件（无依赖边）',
-  legendId: '插件唯一编号',
+  legendId: '本次运行内的创建序号',
 }

@@ -18,6 +18,8 @@ import type { TypertRemoteNamespace } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls ctx.slots (SlotRegistry) into this program.
 import type {} from '@deepseek-ai/dsh-client-runtime/client'
+// Type-only: merges the sidebar SlotMap (sidebar.footer.action declaration).
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 // Type-only: pulls the `remote` service / TypertClientRemote into scope.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: augments TypertRemoteMap with typed pluginTopology methods.
@@ -27,6 +29,13 @@ import topologyRemote from './remote-client.ts'
 import { createTopologyViewStore } from './stores.ts'
 import { TopologyPanel } from './panel.tsx'
 import { en, NS, zh, type PluginTopologyLocaleKey } from './locales.ts'
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    /** Plugin dependency graph view copy. */
+    'pluginTopology': PluginTopologyLocaleKey
+  }
+}
 
 export type { TopologyViewInjected, TopologyViewProps } from './TopologyView.tsx'
 export type { PluginTopologyLocaleKey } from './locales.ts'

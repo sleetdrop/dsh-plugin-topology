@@ -4,10 +4,10 @@ Plugin dependency graph inspector for DeepSeek Harness. It snapshots the live
 Cordis plugin fiber tree into a plugin/service bipartite graph, derives
 graph-theory metrics, and renders it as JSON, Graphviz DOT, or SVG.
 
-A single installable bundle ships three surfaces:
+One installable bundle ships three surfaces:
 
 - **host service** (`@sleetdrop/dsh-plugin-topology`): a `TypertRemoteService`
-  exposing `analyze()` and `render()` over the unary gateway.
+  exposing `analyze()` and `render()` over the gateway.
 - **host tool** (`@sleetdrop/dsh-plugin-topology/tool`): the model-facing
   `graph.render` tool, registering on `ctx.tools`.
 - **browser surface** (`dsh.client`): a global panel reachable from the sidebar
@@ -17,82 +17,94 @@ A single installable bundle ships three surfaces:
 ## Install
 
 ```sh
-# From a registry (npm):
-dsh plugin --profile demo add @sleetdrop/dsh-plugin-topology
+# From the npm registry (prebuilt lib/, no build permission needed):
+dsh plugin --profile <name> add @sleetdrop/dsh-plugin-topology
 
-# From GitHub (builds source via the prepare script):
-dsh plugin --profile demo add github:sleetdrop/dsh-plugin-topology#<sha>
+# From a local checkout:
+git clone https://github.com/sleetdrop/dsh-plugin-topology.git
+cd dsh-plugin-topology && pnpm install && pnpm build
+dsh plugin --profile <name> add ./dsh-plugin-topology
 ```
 
-The first `add` from GitHub is refused until the build script is allowlisted —
-copy the exact package key pnpm printed into the profile's `pnpm-workspace.yaml`
-and re-run. Git installs fetch source, so the `prepare` script compiles it
-self-contained; a registry install ships the built `lib/`.
+The bundle patch mounts the host service row and the `graph.render` tool row.
+The tool row can live in the profile patch instead — a deployment that prefers
+per-session placement may remove it from `cordis.patch.yml` and add it to its
+agent preset.
 
 ## Model Experience
 
-The `graph.render` tool is a model-facing Consumer of the topology seam. It
-serializes the running instance's plugin dependency graph as one document:
+The `graph.render` tool serializes the running instance's plugin dependency
+graph as one document:
 
 - `json` — a NetworkX-compatible node-link graph whose nodes carry graph-theory
   metrics (in/out degree, degree/betweenness/eigenvector centrality, page-rank)
   and whose `graph` object carries global metrics (density, strongly connected
   components, `isDag`, diameter).
 - `dot` — Graphviz source for layout via any Graphviz tool.
-- `svg` — a Graphviz-rendered SVG, with any isolated plugins composed beside the
+- `svg` — a Graphviz-rendered SVG, with isolated plugins composed beside the
   main graph.
 
 For `dot` or `svg`, write the returned content to a file with the write tool to
 produce a shareable artifact. Use `json` to inspect or analyze the assembly.
 
-## Known Limitations
+## Browser panel
 
-The host service reads the live Cordis registry and reflect store
-(`root.registry`, `root.reflect.store`, fiber fields) to reconstruct the graph.
-These are not part of Cordis's stable public API and are gated on a pinned
-`@deepseek-ai/cordis` peer range (see Compatibility). If a future Cordis
-reshapes them, the projection degrades instead of throwing — it reports the
-surfaces it could read and skips the rest.
+The trigger sits in `sidebar.footer.action` (a root-scope list slot, above
+Settings), visible with or without a selected session — the topology is
+runtime-global and needs no session context. The panel opens maximized by
+default (the Graphviz canvas needs the space); the header button restores a
+centered window. Same-named plugin instances merge into one node; each node's
+label carries the instance creation ordinals in brackets (`timer [1,9,23]`),
+assigned at startup and meaningful only within that run.
+
+The client injects `remote` (the gateway ClientRemote service) and self-mounts
+its own `pluginTopology` Remote contribution, so it does not require editing
+the host assembly's contribution list.
 
 ## Compatibility
 
-The service relies on the `@deepseek-ai/cordis` internal registry/reflect
-surfaces, so its runtime contract binds to a narrow Cordis version range. The
-`peerDependencies` declare the range the plugin is built and tested against;
-verify the installed harness satisfies it before enabling the tool or panel.
+Targets DeepSeek Harness `0.1.1-rc.2`; the `peerDependencies` pin the client
+packages and `@deepseek-ai/cordis@^4.0.1` the snapshot reads through. The
+service reads Cordis internals (`root.registry`, `root.reflect.store`, fiber
+fields) that are not part of the stable public API — verify the installed
+harness satisfies the peer ranges before enabling the tool or panel.
 
-## Browser panel
+## Known Limitations
 
-The client mounts into `sidebar.footer.action` (a root-scope list slot), so the
-trigger + fixed panel are visible with or without a selected session. The panel
-needs no session context — the topology is runtime-global. The panel injects
-`remote` (the gateway ClientRemote service) and self-mounts its own
-`pluginTopology` Remote contribution, so it does not require editing the host
-assembly's contribution list.
+- A future Cordis that reshapes the internal registry/reflect surfaces breaks
+  `snapshot()`; it does not degrade silently.
+- The browser panel requires a web profile (the `--patch` overlay covers only
+  the node half).
+- Same-named instances merge in the display graph; per-instance identity stays
+  available in the JSON export and the complete downloadable DOT.
 
 ## Development
-
-DevDependencies link the local harness checkout via `link:` paths, so the
-plugin typechecks and builds against the exact `@deepseek-ai/*` versions you are
-developing against. Production `peerDependencies` carry the published version
-ranges a consumer's harness satisfies.
 
 ```sh
 pnpm install
 pnpm run build      # tsc (node half) + tsdown (client bundle)
-pnpm test           # tsc test program + node:test
+pnpm test           # node:test over compiled specs
 pnpm run typecheck  # noEmit check
 ```
 
+The `dsh.client` browser bundle inlines everything except `react` and
+`@deepseek-ai/dsh-client-runtime`, the two rows every harness shell serves.
+
+See [NEXT-STEPS.md](NEXT-STEPS.md) for planned renderer improvements.
+
 ## Publishing
 
-1. Ensure the produced `lib/` contains the node half (`lib/index.js`, `lib/tool.js`,
-   ...), the client bundle (`lib/client.js`, CSS inlined), and the type declarations
-   (`lib/types/**`).
-2. Confirm the `./typert` / `./remote` exports resolve to the generated Remote
-   artifacts (or the checked-in descriptor in `src/client/remote-client.ts`).
-3. Publish to npm with `pnpm publish --access public`. Requires an npm account
-   with `@sleetdrop` scope access; `prepublishOnly` runs the build and tests first.
+`prepublishOnly` runs the build and tests. `publishConfig.access` is `public`,
+so:
 
-A git install needs the `prepare` script (already wired) to compile from source
-self-contained; a registry install ships the prebuilt `lib/`.
+```sh
+npm login                       # once, with the sleetdrop account
+npm publish                     # builds, tests, and publishes the tarball
+```
+
+`files` ships `lib/`, `cordis.patch.yml`, and `overlay.example.yml`; npm adds
+README and LICENSE automatically.
+
+## License
+
+[MIT](LICENSE)

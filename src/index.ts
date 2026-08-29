@@ -12,8 +12,8 @@
  * The deep reads here reach into Cordis internals that are not part of its
  * stable public API (`root.registry`, `root.reflect.store`, fiber fields).
  * They are gated on a pinned `@deepseek-ai/cordis` peer range (see README
- * "Compatibility"); if a future Cordis reshapes them, the projection degrades
- * instead of throwing, reporting what it could read.
+ * "Compatibility"); a Cordis that reshapes these surfaces breaks this
+ * projection instead of degrading silently.
  *
  * @module @sleetdrop/dsh-plugin-topology
  */
