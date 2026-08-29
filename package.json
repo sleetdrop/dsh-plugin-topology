@@ -19,33 +19,29 @@
   "types": "lib/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./lib/types/index.d.ts",
+      "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     },
     "./invariant": {
-      "types": "./lib/types/invariant.d.ts",
+      "types": "./lib/invariant.d.ts",
       "default": "./lib/invariant.js"
     },
     "./client": {
-      "types": "./lib/types/client/index.d.ts",
+      "types": "./lib/client/index.d.ts",
       "default": "./lib/client.js"
     },
     "./types": {
-      "types": "./lib/types/types.d.ts",
-      "default": "./lib/types/types.js"
+      "types": "./lib/types.d.ts",
+      "default": "./lib/types.js"
     },
     "./package.json": "./package.json",
     "./tool": {
-      "types": "./lib/types/tool.d.ts",
+      "types": "./lib/tool.d.ts",
       "default": "./lib/tool.js"
     },
     "./remote": {
-      "types": "./lib/typert.remote-client.d.ts",
-      "default": "./lib/typert.remote-client.js"
-    },
-    "./typert": {
-      "types": "./lib/typert.host.d.ts",
-      "default": "./lib/typert.host.js"
+      "types": "./lib/client/remote-client.d.ts",
+      "default": "./lib/client/remote-client.js"
     }
   },
   "files": [
@@ -70,7 +66,7 @@
   "scripts": {
     "build": "tsc && tsdown",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsc -p tsconfig.test.json && node --test lib-test/test/",
+    "test": "tsc -p tsconfig.test.json && node --test 'lib-test/test/*.test.js'",
     "prepare": "pnpm run build",
     "prepublishOnly": "pnpm build && pnpm test"
   },

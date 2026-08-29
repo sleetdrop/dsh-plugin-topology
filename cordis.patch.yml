@@ -1,0 +1,17 @@
+# The plugin-topology bundle patch. Applied when a profile lists this bundle.
+# The plugin-topology host service is the package default export; the graph.render
+# tool is the ./tool subpath default export; the browser surface is the dsh.client
+# row the bundle declares (see package.json dsh.client).
+
+- insert:
+    - id: plugin-topology
+      name: '@sleetdrop/dsh-plugin-topology'
+
+- insert:
+    - id: tool-plugin-topology
+      name: '@sleetdrop/dsh-plugin-topology/tool'
+      # Model-visible tools in the harness mount through the per-session agent
+      # preset; a bundle may place the tool here so a profile that adds this
+      # bundle exposes the tool in its own preset. Users who prefer the
+      # per-session placement can remove this row and add it to their agent
+      # preset instead.
