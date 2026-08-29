@@ -94,12 +94,22 @@ See [NEXT-STEPS.md](NEXT-STEPS.md) for planned renderer improvements.
 
 ## Publishing
 
-`prepublishOnly` runs the build and tests. `publishConfig.access` is `public`,
-so:
+`prepublishOnly` runs the build and tests. `publishConfig` pins `access:
+public` and the `registry.npmjs.org` target (machine-local pnpm may default to
+a read-only mirror), so:
 
 ```sh
 npm login                       # once, with the sleetdrop account
 npm publish                     # builds, tests, and publishes the tarball
+```
+
+If `npm publish` fails with an `EPERM` from the npm cache
+(`root-owned files`), either fix the cache once
+(`sudo chown -R $(id -u):$(id -g) ~/.npm`) or publish through pnpm, whose
+store avoids the npm cache entirely:
+
+```sh
+pnpm publish                    # same prepublishOnly gate, pnpm store
 ```
 
 `files` ships `lib/`, `cordis.patch.yml`, and `overlay.example.yml`; npm adds
