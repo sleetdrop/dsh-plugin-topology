@@ -1,32 +1,44 @@
+/* Trigger + fixed panel, styled to match the harness footer (Settings button). */
+
 .layer {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .rail {
   justify-content: center;
 }
 
+/* Mirrors the rc.2 Settings footer trigger: full-width ghost row, 42px, hover bg. */
 .trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid var(--dsw-border, #cbd5e1);
-  border-radius: 8px;
-  background: var(--dsw-surface, #ffffff);
-  color: var(--dsw-text-secondary, #64748b);
-  font-size: 12px;
+  box-sizing: border-box;
   cursor: pointer;
+  width: calc(100% + 4px);
+  height: 42px;
+  color: var(--dsw-alias-label-primary, #0f172a);
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  margin: 4px -2px;
+  padding: 0 10px 0 8px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  display: flex;
+  overflow: hidden;
 }
 
 .trigger:hover {
-  color: var(--dsw-text-primary, #0f172a);
-  border-color: var(--dsw-alias-state-business-primary, #3b82f6);
+  background: var(--dsw-alias-interactive-bg-hover, #f1f5f9);
 }
 
 .triggerLabel {
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .panel {
@@ -83,4 +95,25 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* Local outline button (no shared Button on rc.2). */
+:global(.pluginTopologyButton) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--dsw-border, #cbd5e1);
+  border-radius: 6px;
+  background: var(--dsw-surface, #ffffff);
+  color: var(--dsw-text-primary, #0f172a);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+:global(.pluginTopologyButton:hover) {
+  border-color: var(--dsw-alias-state-business-primary, #3b82f6);
 }
