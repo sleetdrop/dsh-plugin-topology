@@ -55,9 +55,10 @@
     "client": {
       "platform": "web",
       "inject": [
-        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-runtime",
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-slots"
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-ui-sidebar"
       ]
     }
   },
@@ -71,33 +72,29 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-api-remotes": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-client-locale": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-client-ui-sidebar": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-client-locale": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-sidebar": "^0.1.1-rc.2",
     "@deepseek-ai/dsh-tools": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-typert-protocol": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-invariants": "^0.1.0-rc.5"
+    "@deepseek-ai/dsh-typert-protocol": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-invariants": "^0.1.1-rc.2"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/vendor/cordis",
-    "@deepseek-ai/dsh-api-remotes": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/api/remotes",
-    "@deepseek-ai/dsh-client-locale": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/client/locale",
-    "@deepseek-ai/dsh-client-runtime": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/client/runtime",
-    "@deepseek-ai/dsh-client-store": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/client/store",
-    "@deepseek-ai/dsh-client-ui-sidebar": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/client/ui-sidebar",
-    "@deepseek-ai/dsh-client-ui-slots": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/client/ui-slots",
-    "@deepseek-ai/dsh-client-ui-primitives": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/client/ui-primitives",
-    "@deepseek-ai/dsh-tools": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/core/tools",
-    "@deepseek-ai/dsh-typert-protocol": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/typert/protocol",
-    "@deepseek-ai/dsh-invariants": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/runtime-diagnostics/invariants",
+    "@deepseek-ai/cordis": "link:/Users/jiangyuan/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/cordis",
+    "@deepseek-ai/dsh-api-remotes": "link:/Users/jiangyuan/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh-api-remotes",
+    "@deepseek-ai/dsh-client-locale": "link:/Users/jiangyuan/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh-client-locale",
+    "@deepseek-ai/dsh-client-runtime": "link:/Users/jiangyuan/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh-client-runtime",
+    "@deepseek-ai/dsh-client-ui-sidebar": "link:/Users/jiangyuan/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh-client-ui-sidebar",
+    "@deepseek-ai/dsh-tools": "link:/Users/jiangyuan/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh-tools",
+    "@deepseek-ai/dsh-typert-protocol": "link:/Users/jiangyuan/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh-typert-protocol",
+    "@deepseek-ai/dsh-invariants": "link:/Users/jiangyuan/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh-invariants",
     "@types/node": "^24.0.0",
     "@types/react": "~18.3.1",
     "react": "^18.2.0",
     "tsdown": "^0.15.0",
     "typescript": "^5.8.0",
-    "@deepseek-ai/dsh-client-ui-renderer": "link:/Users/jiangyuan/Documents/learn/typescript/deepseek-harness/packages/client/ui-renderer",
-    "lightningcss": "1.32.0"
+    "lightningcss": "1.32.0",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.1-rc.1"
   },
   "dependencies": {
     "@hpcc-js/wasm-graphviz": "^1.28.0",

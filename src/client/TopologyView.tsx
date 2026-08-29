@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Button, IconChevronDownOutline14, IconDownloadOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronDownOutline14, IconDownloadOutline16, OutlineButton } from './icons.tsx'
 import type { Rankdir, RenderFormat, TopologyAnalysis } from '../types.ts'
-import type { PropsLocale, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
+import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PluginTopologyLocaleKey } from './locales.ts'
 import { TopologyGraphView } from './TopologyGraphView.tsx'
 import { createTopologyViewStore, type TopologyTransform } from './stores.ts'
 import css from './TopologyView.module.css'
@@ -17,11 +18,15 @@ export interface TopologyViewInjected {
 
 type ViewerHandle = ReturnType<typeof createTopologyViewStore>
 
+/** Viewer state selector: the remembered transform (null until the first fit). */
+export type ViewerStateSelector = SnapshotSelectorHook<{ transform: TopologyTransform | null }>
+
 /** Full component props: the store seat, the injected callbacks, and the locale `t`. */
-export type TopologyViewProps =
-  PropsStore<ViewerHandle>
-  & TopologyViewInjected
-  & PropsLocale<'pluginTopology'>
+export type TopologyViewProps = {
+  useStore: ViewerStateSelector
+  actions: { setTransform: (transform: TopologyTransform | null) => void }
+  t: (key: PluginTopologyLocaleKey) => string
+} & TopologyViewInjected
 
 type ViewState =
   | { readonly status: 'loading' }
@@ -138,7 +143,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
       {state.status === 'error' ? (
         <div className={css.failure}>
           <p className={css.status} role="alert">{t('error')}</p>
-          <Button size="sm" onClick={retry}>{t('retry')}</Button>
+          <OutlineButton onClick={retry}>{t('retry')}</OutlineButton>
         </div>
       ) : null}
       {state.status === 'ready' ? (
@@ -191,15 +196,13 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
                 </button>
               </div>
               {DOWNLOAD_FORMATS.map(({ format, labelKey }) => (
-                <Button
+                <OutlineButton
                   key={format}
-                  size="sm"
-                  variant="outline"
                   icon={<IconDownloadOutline16 size={14} />}
                   onClick={() => { void download(format, rankdir, render) }}
                 >
                   {t(labelKey)}
-                </Button>
+                </OutlineButton>
               ))}
             </div>
           </div>

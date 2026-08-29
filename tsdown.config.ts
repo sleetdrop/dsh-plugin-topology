@@ -32,13 +32,8 @@ const CLIENT_EXTERNALS: readonly string[] = [
   'react-dom',
   'react-dom/client',
   '@deepseek-ai/cordis',
-  '@deepseek-ai/dsh-client-ui-slots',
-  '@deepseek-ai/dsh-client-ui-primitives',
-  '@deepseek-ai/dsh-client-ui-sidebar',
-  '@deepseek-ai/dsh-client-locale',
-  '@deepseek-ai/dsh-api-remotes',
-  '@deepseek-ai/dsh-typert-protocol',
-  '@deepseek-ai/dsh-client-store',
+  '@deepseek-ai/dsh-client-runtime',
+  '@deepseek-ai/dsh-client-runtime/client',
 ]
 
 /** Wire/type layers a client bundle may inline: browser-safe contracts with
@@ -142,7 +137,7 @@ export default defineConfig({
   }],
   outputOptions: {
     entryFileNames: 'client.js',
-    banner: 'window.__ModuleLoader__.load({ id: "dsh-plugin-topology", factory: (require) => {',
+    banner: 'window.__ModuleLoader__.load({ id: "@sleetdrop/dsh-plugin-topology", factory: (require) => {',
     footer: 'return module.exports; } });',
     intro: 'var module = { exports: {} }; var exports = module.exports;',
   },

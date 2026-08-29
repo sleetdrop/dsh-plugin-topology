@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
-import { IconFullscreenOutline16, IconPlusOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { IconMinusOutline16 } from './icons.tsx'
+import { IconFullscreenOutline16, IconMinusOutline16, IconPlusOutline16 } from './icons.tsx'
 import type { TopologyTransform } from './stores.ts'
 import css from './TopologyGraphView.module.css'
 

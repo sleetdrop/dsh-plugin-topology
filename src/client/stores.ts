@@ -1,4 +1,4 @@
-import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
+import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-runtime/client'
 
 /** The pan/zoom transform of the graph viewport. */
 export interface TopologyTransform {
@@ -20,14 +20,14 @@ type ViewerActions = {
 /**
  * Create the shared root-scope viewer handle. The transform is written here so
  * it survives the panel's unmount/remount when the user closes and reopens the
- * global panel. Root scope: `create()` omits the scope key.
+ * global panel.
  * @returns the store handle (spec + type + identity + factory in one).
  */
 export function createTopologyViewStore(): EngineStoreHandle<ViewerState, ViewerActions> {
   return defineStore({
     init: (): ViewerState => ({ transform: null }),
     actions: {
-      setTransform: (d, transform) => { d.transform = transform },
+      setTransform: (d: ViewerState, transform: TopologyTransform | null) => { d.transform = transform },
     },
   })
 }
