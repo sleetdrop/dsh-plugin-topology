@@ -1,0 +1,19 @@
+# Node-half only overlay for `dsh --profile <name> --patch <this file>`.
+# Use this to test the `graph.render` tool and the host dependency service
+# WITHOUT installing the bundle into a profile (the browser panel needs the
+# web profile; see README "Local development").
+#
+# Copy this to overlay.yml and replace the path with the absolute path to this
+# checkout's built node entry. Build first:
+#
+#   pnpm install && pnpm build
+#   cp overlay.example.yml overlay.yml   # then edit the name below
+#   dsh --profile headless --patch ./overlay.yml "render the plugin topology as json"
+#
+- insert:
+    - id: plugin-topology
+      name: /absolute/path/to/dsh-plugin-topology/lib/index.js
+
+- insert:
+    - id: tool-plugin-topology
+      name: /absolute/path/to/dsh-plugin-topology/lib/tool.js
