@@ -47,6 +47,16 @@ graph as one document:
 For `dot` or `svg`, write the returned content to a file with the write tool to
 produce a shareable artifact. Use `json` to inspect or analyze the assembly.
 
+## Screenshots
+
+The panel opens maximized by default and renders the live plugin/service
+topology as a zoomable Graphviz graph, with metrics, a color legend, and an
+unresolved-dependency table. The same panel is localized through the harness
+locale dictionaries:
+
+- [Chinese (zh_CN)](docs/screenshots/panel-zh_CN.png)
+- [English (en_US)](docs/screenshots/panel-en_US.png)
+
 ## Browser panel
 
 The trigger sits in `sidebar.footer.action` (a root-scope list slot, above
