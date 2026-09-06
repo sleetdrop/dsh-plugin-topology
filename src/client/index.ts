@@ -4,25 +4,28 @@
  * fixed, centered panel that shows the live Host plugin dependency graph
  * (metrics, legend, unresolved-dependency log, zoom/pan and format downloads).
  *
- * The Host service is consumed through the generated `remote` namespace, whose
- * contribution this plugin mounts itself (`ctx.remote.$mount`). The mounted
- * namespace service is read through `ctx.get('remote.pluginTopology')` — the
- * Cordis no-inject read — because declaring it in `inject` would deadlock:
- * the service does not exist until this plugin's own apply mounts it.
+ * The Host service is consumed through the generated `remote` namespace. This
+ * package self-mounts its `pluginTopology` Remote contribution on `ctx.remote`
+ * (`$mount`), so it does not require a hand-edited host assembly contribution
+ * list. The namespace is read lazily inside the panel callbacks through the
+ * `ctx.remote.pluginTopology` namespace — those closures run only after the
+ * user opens the panel, long after the mount settles.
  * @module @sleetdrop/dsh-plugin-topology/client
  */
 
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { TypertRemoteNamespace } from '@deepseek-ai/dsh-typert-protocol'
+import type { Context } from '@deepseek-ai/cordis'
+import type { TypertDisposer, TypertRemoteNamespace } from '@deepseek-ai/dsh-typert-protocol'
+// Type-only: pulls ctx.slots (SlotRegistry) provided by the shell baseline
+// renderer into scope.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: pulls ctx.locale into this program.
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-// Type-only: pulls ctx.slots (SlotRegistry) into this program.
-import type {} from '@deepseek-ai/dsh-client-runtime/client'
-// Type-only: merges the sidebar SlotMap (sidebar.footer.action declaration).
+// Type-only: merges the sidebar SlotMap (sidebar.footer.action declaration)
+// and the slot owner/occupant props into scope.
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
-// Type-only: pulls the `remote` service / TypertClientRemote into scope.
+// Type-only: pulls the `remote` service / ClientRemote into scope.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
-// Type-only: augments TypertRemoteMap with typed pluginTopology methods.
+// Type-only: augments TypertRemoteNamespaceMap with typed pluginTopology methods.
 import type {} from './remote.d.ts'
 // The generated Host Remote-descriptor contribution for this package.
 import topologyRemote from './remote-client.ts'
@@ -40,44 +43,37 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 export type { TopologyViewInjected, TopologyViewProps } from './TopologyView.tsx'
 export type { PluginTopologyLocaleKey } from './locales.ts'
 export { TopologyPanel, type TopologyPanelProps } from './panel.tsx'
+export { createTopologyViewStore, type ViewerHandle } from './stores.ts'
 
 /** The mounted namespace service face, as typed by the /remote contribution. */
 type PluginTopologyNamespace = TypertRemoteNamespace<'pluginTopology'>
 
-/** Services required by the panel. The topology namespace is self-mounted and
- * read through ctx.get — see the module doc for the deadlock rationale. */
+/** Required services: the slot registry, the locale runtime, and the Remote gateway. */
 export const inject = ['slots', 'locale', 'remote']
 
 /** Contribute the global topology panel trigger + panel to the sidebar footer. */
-export function apply(ctx: ClientContext): void {
-  // rc.2 locale API: per-locale registration (the typed dicts form needs a
-  // LocaleNamespaceMap merge this package deliberately avoids).
-  ctx.effect(() => {
-    const unregisterEn = ctx.locale.register(NS, 'en', en)
-    const unregisterZh = ctx.locale.register(NS, 'zh', zh)
-    return () => {
-      unregisterEn()
-      unregisterZh()
-    }
-  }, 'ui-plugin-topology: dictionaries')
+export function apply(ctx: Context): void {
+  // rc.1 locale API: register the dictionary map object keyed by built-in
+  // locale id (the typed dicts form needs a LocaleNamespaceMap merge — the
+  // declare module above provides the `pluginTopology` namespace).
+  ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'ui-plugin-topology: dictionaries')
 
   // Mount the package's own Remote contribution so `remote.pluginTopology`
-  // becomes a live namespace service. The mounted service is read via
-  // ctx.get (no-inject) inside the panel callbacks, which run only after the
-  // user opens the panel — long after this mount has settled.
+  // becomes a live namespace service. The namespace is read via the
+  // `ctx.remote.pluginTopology` namespace inside the panel callbacks, which run
+  // only after the user opens the panel — long after this mount has settled.
   ctx.effect(() => ctx.remote.$mount(topologyRemote).then(
-    dispose => dispose,
+    (dispose: TypertDisposer) => dispose,
     (error: unknown) => {
       console.error('[plugin-topology] remote contribution mount failed:', error)
       return () => {}
     },
   ), 'ui-plugin-topology: mount remote contribution')
 
-  const t = ctx.locale.bind(NS)
   const viewerStore = createTopologyViewStore()
 
   const namespaceOf = (): PluginTopologyNamespace => {
-    const namespace = ctx.get('remote.pluginTopology') as PluginTopologyNamespace | undefined
+    const namespace = ctx.remote.pluginTopology
     if (namespace === undefined) {
       throw new Error('pluginTopology remote namespace is not mounted yet — reopen the panel')
     }
@@ -89,7 +85,10 @@ export function apply(ctx: ClientContext): void {
     id: 'plugin-topology',
     order: 100,
     locale: NS,
-    label: () => t('title'),
+    // Store seat persisted across panel remounts (the transform is written
+    // here so it survives closing/reopening the global panel). Declaring it
+    // makes the occupant receive `useStore` + bound `actions` props, and the
+    // `inject` factory below receives the same baked actions as its arg.
     store: viewerStore,
     inject: () => ({
       analyze: async () => {

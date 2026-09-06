@@ -10,7 +10,7 @@
   justify-content: center;
 }
 
-/* Mirrors the rc.2 Settings footer trigger: full-width ghost row, 42px, hover bg. */
+/* Mirrors the Settings footer trigger: full-width ghost row, 42px, hover bg. */
 .trigger {
   box-sizing: border-box;
   cursor: pointer;
@@ -111,7 +111,7 @@
   flex-direction: column;
 }
 
-/* Local outline button (no shared Button on rc.2). */
+/* Local outline button. */
 :global(.pluginTopologyButton) {
   display: inline-flex;
   align-items: center;

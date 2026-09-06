@@ -73,11 +73,27 @@ the host assembly's contribution list.
 
 ## Compatibility
 
-Targets DeepSeek Harness `0.1.1-rc.2`; the `peerDependencies` pin the client
-packages and `@deepseek-ai/cordis@^4.0.1` the snapshot reads through. The
-service reads Cordis internals (`root.registry`, `root.reflect.store`, fiber
-fields) that are not part of the stable public API — verify the installed
+Targets DeepSeek Harness `0.1.2-rc.1`; the `peerDependencies` pin the client
+packages and `@deepseek-ai/cordis@^4.0.2` the snapshot reads through. The
+0.1.2 rc line removed the old `dsh-client-runtime` browser runtime: the client
+now runs on the Cordis `Context` augmented by the shell baseline renderer
+(`dsh-client-ui-renderer` → `ctx.slots`), `dsh-client-store` (`defineStore`),
+`dsh-client-locale` (`ctx.locale`), and `dsh-api-remotes` (`ctx.remote`).
+The service reads Cordis internals (`root.registry`, `root.reflect.store`,
+fiber fields) that are not part of the stable public API — verify the installed
 harness satisfies the peer ranges before enabling the tool or panel.
+
+### Release tagging vs. the DSH cadence
+
+DSH has no beta channel — it publishes `alpha` then `rc` under the `next`
+dist-tag (`latest` is stale). This plugin follows stable `rc` releases only and
+skips the fast-moving `alpha` line, tagging each adaptation to the DSH rc it
+was validated against:
+
+| Plugin version | Targets DSH harness | Notes |
+| --- | --- | --- |
+| `0.1.0` | `0.1.1-rc.2` | Old `dsh-client-runtime` browser model (frozen). |
+| `0.2.0-rc.x` | `0.1.2-rc.1` | Cordis-Context browser model; client-runtime removed. |
 
 ## Known Limitations
 
@@ -97,8 +113,9 @@ pnpm test           # node:test over compiled specs
 pnpm run typecheck  # noEmit check
 ```
 
-The `dsh.client` browser bundle inlines everything except `react` and
-`@deepseek-ai/dsh-client-runtime`, the two rows every harness shell serves.
+The `dsh.client` browser bundle inlines everything except the shell's frozen
+platform-module rows (`react`, `@deepseek-ai/cordis`, `dsh-client-store`, and
+`dsh-client-ui-slots`), which every 0.1.2-rc.1 harness shell serves.
 
 See [NEXT-STEPS.md](NEXT-STEPS.md) for planned renderer improvements.
 

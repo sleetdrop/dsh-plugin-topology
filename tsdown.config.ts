@@ -23,8 +23,10 @@ import { transform } from 'lightningcss'
 import { defineConfig } from 'tsdown'
 
 /**
- * Externals answered by the shell's module table — imported normally and left
- * as require() calls in the bundle. Anything else must inline.
+ * Externals answered by the shell's frozen module table (0.1.2-rc.1
+ * `@deepseek-ai/dsh-client-web/src/platform` PLATFORM_MODULES) — imported
+ * normally and left as require() calls in the bundle. Anything else must
+ * inline or stay type-only.
  */
 const CLIENT_EXTERNALS: readonly string[] = [
   'react',
@@ -32,13 +34,14 @@ const CLIENT_EXTERNALS: readonly string[] = [
   'react-dom',
   'react-dom/client',
   '@deepseek-ai/cordis',
-  '@deepseek-ai/dsh-client-runtime',
-  '@deepseek-ai/dsh-client-runtime/client',
+  '@deepseek-ai/dsh-client-store',
+  '@deepseek-ai/dsh-client-ui-slots',
+  '@deepseek-ai/dsh-client-ui-primitives',
 ]
 
 /** Wire/type layers a client bundle may inline: browser-safe contracts with
  * no runtime identity to share (no Symbol/instanceof/singleton state). */
-const INLINE_SAFE = /^@deepseek-ai\/dsh-(host-apiproxy|session|llm|tools|brand)(\/|$)/
+const INLINE_SAFE = /^(?:@deepseek-ai\/dsh-(?:file-reference|session|llm|tools|brand|deque|typert-protocol|util-crypto|util-values|util-workspace-path)(?:\/|$)|@deepseek-ai\/dsh-token-meter\/client$|@deepseek-ai\/dsh-agent-presets\/display$)/
 
 /** Vendored framework libraries: ordinary libraries a browser bundle inlines. */
 const VENDORED_LIBRARY = /^@deepseek-ai\/(cosmokit|schemastery)(\/|$)/

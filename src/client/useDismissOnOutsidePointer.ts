@@ -3,7 +3,7 @@ import type { RefObject } from 'react'
 
 /**
  * Close a popover when the pointer presses outside its root element.
- * Local implementation: the 0.1.1-rc.2 harness ships no shared dismiss hook.
+ * Local implementation: the plugin keeps its own dismiss hook.
  * @param ref - root element the interaction belongs to.
  * @param open - whether the popover is currently open.
  * @param setOpen - close state setter.

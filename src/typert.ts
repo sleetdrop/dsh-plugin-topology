@@ -1,7 +1,7 @@
 /**
  * Host-face Typert manifest.
  *
- * The 0.1.1-rc.2 typert-loader resolves each loader entry's `exports["./typert"]`
+ * The typert-loader resolves each loader entry's `exports["./typert"]`
  * and registers its TYPERT manifest into `ctx.typert`; packages without the
  * export are skipped silently, which leaves their `@Remote` methods
  * undiscoverable. This module mirrors the artifact the

@@ -1,8 +1,8 @@
 /**
  * Local icon set for the topology viewer.
  *
- * The 0.1.1-rc.2 harness has no shared `dsh-client-ui-primitives` package, so
- * the plugin carries its own icons and controls. Each glyph is a self-contained
+ * The plugin carries its own icons and controls rather than depending on the
+ * shell's `dsh-client-ui-primitives` glyph set. Each glyph is a self-contained
  * SVG in the `currentColor` convention.
  * @module @sleetdrop/dsh-plugin-topology/client/icons
  */
@@ -85,7 +85,7 @@ export function IconPluginOutline16({ size = 16, className }: IconProps): ReactN
   )
 }
 
-/** Minimal outline button (the rc.2 harness ships no shared Button). */
+/** Minimal outline button (the plugin keeps its own control set). */
 export function OutlineButton({
   children, onClick, title, icon,
 }: {
