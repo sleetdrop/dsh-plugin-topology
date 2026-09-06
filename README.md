@@ -124,14 +124,17 @@ See [NEXT-STEPS.md](NEXT-STEPS.md) for planned renderer improvements.
 
 ## Publishing
 
-`prepublishOnly` runs the build and tests. `publishConfig` pins `access:
-public` and the `registry.npmjs.org` target (machine-local pnpm may default to
-a read-only mirror), so:
+The full end-to-end release checklist (version bump → build/test → commit/tag →
+headless + browser smoke → publish) is in [`docs/RELEASING.md`](docs/RELEASING.md).
+The final publish requires an interactive OTP, so it is run by hand:
 
 ```sh
-npm login                       # once, with the sleetdrop account
-npm publish                     # builds, tests, and publishes the tarball
+pnpm publish --tag next --access public   # prompts for your OTP
 ```
+
+`prepublishOnly` runs the build and tests. `publishConfig` pins `access:
+public` and the `registry.npmjs.org` target (machine-local pnpm may default to
+a read-only mirror). If `npm publish` fails with an `EPERM` from the npm cache
 
 If `npm publish` fails with an `EPERM` from the npm cache
 (`root-owned files`), either fix the cache once
