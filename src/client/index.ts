@@ -8,8 +8,8 @@
  * package self-mounts its `pluginTopology` Remote contribution on `ctx.remote`
  * (`$mount`), so it does not require a hand-edited host assembly contribution
  * list. The namespace is read lazily inside the panel callbacks through the
- * `ctx.remote.pluginTopology` namespace — those closures run only after the
- * user opens the panel, long after the mount settles.
+ * `ctx.get('remote.pluginTopology')` no-inject read — those closures run only
+ * after the user opens the panel, long after the mount settles.
  * @module @sleetdrop/dsh-plugin-topology/client
  */
 
@@ -60,8 +60,9 @@ export function apply(ctx: Context): void {
 
   // Mount the package's own Remote contribution so `remote.pluginTopology`
   // becomes a live namespace service. The namespace is read via the
-  // `ctx.remote.pluginTopology` namespace inside the panel callbacks, which run
-  // only after the user opens the panel — long after this mount has settled.
+  // `ctx.get('remote.pluginTopology')` no-inject read inside the panel
+  // callbacks, which run only after the user opens the panel — long after this
+  // mount has settled.
   ctx.effect(() => ctx.remote.$mount(topologyRemote).then(
     (dispose: TypertDisposer) => dispose,
     (error: unknown) => {
@@ -73,7 +74,13 @@ export function apply(ctx: Context): void {
   const viewerStore = createTopologyViewStore()
 
   const namespaceOf = (): PluginTopologyNamespace => {
-    const namespace = ctx.remote.pluginTopology
+    // No-inject read: the `remote.pluginTopology` namespace service is mounted
+    // by this plugin's own `$mount` above, so it cannot appear in `inject`
+    // (injecting a self-mounted dynamic service would deadlock — the service
+    // does not exist until this plugin's apply mounts it). `ctx.get` reads the
+    // store without the inject requirement; it resolves only once the mount's
+    // namespace fiber is ACTIVE, which the panel callbacks guarantee.
+    const namespace = ctx.get('remote.pluginTopology') as PluginTopologyNamespace | undefined
     if (namespace === undefined) {
       throw new Error('pluginTopology remote namespace is not mounted yet — reopen the panel')
     }

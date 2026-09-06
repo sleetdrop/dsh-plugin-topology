@@ -88,12 +88,15 @@ harness satisfies the peer ranges before enabling the tool or panel.
 DSH has no beta channel — it publishes `alpha` then `rc` under the `next`
 dist-tag (`latest` is stale). This plugin follows stable `rc` releases only and
 skips the fast-moving `alpha` line, tagging each adaptation to the DSH rc it
-was validated against:
+was validated against. npm `git` tags mirror the Git tags one-to-one; each
+pre-release ships under the npm `next` dist-tag (never `latest`) so `npm i
+@sleetdrop/dsh-plugin-topology` stays on the last stable line while rc
+consumers opt in explicitly.
 
-| Plugin version | Targets DSH harness | Notes |
+| Plugin version (Git + npm) | Targets DSH harness | Notes |
 | --- | --- | --- |
-| `0.1.0` | `0.1.1-rc.2` | Old `dsh-client-runtime` browser model (frozen). |
-| `0.2.0-rc.x` | `0.1.2-rc.1` | Cordis-Context browser model; client-runtime removed. |
+| `v0.1.0` | `0.1.1-rc.2` | Old `dsh-client-runtime` browser model (frozen). |
+| `v0.2.0-rc.1` | `0.1.2-rc.1` | Cordis-Context browser model; client-runtime removed. |
 
 ## Known Limitations
 
