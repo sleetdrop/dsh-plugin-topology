@@ -73,6 +73,12 @@ the host assembly's contribution list.
 
 ## Compatibility
 
+The plugin uses its **own independent semantic version** — it does not mirror
+the DeepSeek Harness version. New plugin features and bugfixes bump the plugin
+version on their own schedule, independent of which DSH release it targets.
+The table below maps each plugin version to the DSH release it was validated
+against, so pick the plugin version whose target DSH matches your harness.
+
 Targets DeepSeek Harness `0.1.2-rc.1`; the `peerDependencies` pin the client
 packages and `@deepseek-ai/cordis@^4.0.2` the snapshot reads through. The
 0.1.2 rc line removed the old `dsh-client-runtime` browser runtime: the client
@@ -83,20 +89,14 @@ The service reads Cordis internals (`root.registry`, `root.reflect.store`,
 fiber fields) that are not part of the stable public API — verify the installed
 harness satisfies the peer ranges before enabling the tool or panel.
 
-### Release tagging vs. the DSH cadence
-
-DSH has no beta channel — it publishes `alpha` then `rc` under the `next`
-dist-tag (`latest` is stale). This plugin follows stable `rc` releases only and
-skips the fast-moving `alpha` line, tagging each adaptation to the DSH rc it
-was validated against. npm `git` tags mirror the Git tags one-to-one; each
-pre-release ships under the npm `next` dist-tag (never `latest`) so `npm i
-@sleetdrop/dsh-plugin-topology` stays on the last stable line while rc
-consumers opt in explicitly.
+DSH itself has no beta channel — it publishes `alpha` then `rc` (its `latest`
+dist-tag is stale, follow its `next`). This plugin adapts to stable DSH `rc`
+releases only and skips the fast-moving `alpha` line.
 
 | Plugin version (Git + npm) | Targets DSH harness | Notes |
 | --- | --- | --- |
-| `v0.1.0` | `0.1.1-rc.2` | Old `dsh-client-runtime` browser model (frozen). |
-| `v0.2.0-rc.1` | `0.1.2-rc.1` | Cordis-Context browser model; client-runtime removed. |
+| `0.1.0` | `0.1.1-rc.2` | Old `dsh-client-runtime` browser model (frozen). |
+| `0.2.0` | `0.1.2-rc.1` | Cordis-Context browser model; client-runtime removed. |
 
 ## Known Limitations
 
@@ -129,14 +129,12 @@ headless + browser smoke → publish) is in [`docs/RELEASING.md`](docs/RELEASING
 The final publish requires an interactive OTP, so it is run by hand:
 
 ```sh
-pnpm publish --tag next --access public   # prompts for your OTP
+pnpm publish --access public   # prompts for your OTP
 ```
 
 `prepublishOnly` runs the build and tests. `publishConfig` pins `access:
 public` and the `registry.npmjs.org` target (machine-local pnpm may default to
 a read-only mirror). If `npm publish` fails with an `EPERM` from the npm cache
-
-If `npm publish` fails with an `EPERM` from the npm cache
 (`root-owned files`), either fix the cache once
 (`sudo chown -R $(id -u):$(id -g) ~/.npm`) or publish through pnpm, whose
 store avoids the npm cache entirely:

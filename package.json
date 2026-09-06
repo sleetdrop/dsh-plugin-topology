@@ -1,6 +1,6 @@
 {
   "name": "@sleetdrop/dsh-plugin-topology",
-  "version": "0.2.0-rc.1",
+  "version": "0.2.0",
   "description": "Plugin dependency graph inspector for DeepSeek Harness: a host service that snapshots the live Cordis plugin fiber tree, a graph.render tool for the model, and a browser panel that renders the plugin/service topology as a zoomable graph with metrics, legend, and unresolved-dependency table.",
   "license": "MIT",
   "repository": {

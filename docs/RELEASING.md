@@ -1,23 +1,25 @@
 # Releasing
 
-This plugin adapts to DeepSeek Harness **rc** lines only (there is no beta
-channel; `alpha` iterates too fast to follow). Every release is tagged against
-the specific DSH rc it was validated on — see the "Release tagging vs. the DSH
-cadence" table in [`README.md`](../README.md#compatibility).
+This plugin uses its **own independent semantic version** — it never mirrors
+the DeepSeek Harness version. New plugin features and bugfixes bump the plugin
+version on their own schedule. The only thing that tracks DSH is a documented
+compatibility mapping: each plugin version states the DSH release it was
+validated against (see the "Compatibility" table in
+[`README.md`](../README.md#compatibility)).
 
 Because publishing requires an interactive OTP (2FA), the final `pnpm publish`
 step is run **by a human, by hand**. Everything before it is safe to script.
 
 ## One release, end to end
 
-Pick the target DSH rc (e.g. `0.1.2-rc.1`) and a plugin version on that line
-(e.g. `0.2.0-rc.1`). Then:
+Pick a new plugin version using plain semver (e.g. `0.2.0`), and the DSH rc you
+adapt to (e.g. `0.1.2-rc.1`). The two are independent.
 
 ```sh
-# 1. Bump the versions in package.json to the target dsh rc.
+# 1. Bump package.json:
+#    - "version": the new plugin semver (independent of DSH).
 #    - peerDependencies / devDependencies: every @deepseek-ai/* client package
-#      pinned to the rc you adapt to (cordis to ^4.0.x).
-#    - "version": the new plugin prerelease.
+#      pinned to the DSH rc you adapt to (cordis to ^4.0.x).
 
 # 2. Build + test + typecheck gate (prepublishOnly runs these too, but run
 #    them now so you publish with confidence).
@@ -30,9 +32,9 @@ pnpm test
 #    rows (react, @deepseek-ai/cordis, dsh-client-store, dsh-client-ui-slots).
 grep -oE 'require\("[^"]+"\)' lib/client.js | sort -u
 
-# 4. Commit the source changes, then tag (annotated, matching the version).
+# 4. Update the Compatibility table in README.md, then commit + tag.
 git add -A
-git commit -m "feat: adapt plugin to DeepSeek Harness <rc>"
+git commit -m "chore: release <version> (targets dsh <rc>)"
 git tag -a v<version> -m "dsh-plugin-topology v<version> — targets dsh <rc>"
 git push origin main
 git push origin v<version>
@@ -47,13 +49,11 @@ dsh --profile pt-test --no-open --port 0    # open the printed token URL
 
 ```sh
 cd /Users/jiangyuan/Documents/side-work/dsh-plugin-topology
-pnpm publish --tag next --access public
+pnpm publish --access public
 ```
 
-`--tag next` attaches the prerelease to the npm `next` dist-tag so `latest`
-keeps pointing at the last stable line; rc consumers opt in explicitly. npm
-will prompt for your OTP — enter it in the terminal (or approve the push on
-your device).
+`--access public` keeps the scoped package public; npm will prompt for your
+OTP — enter it in the terminal (or approve the push on your device).
 
 ## Verification after publishing
 
@@ -62,11 +62,14 @@ curl -s "https://registry.npmjs.org/@sleetdrop%2fdsh-plugin-topology" \
   | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('dist-tags:',j['dist-tags']);console.log('versions:',Object.keys(j.versions).join(', '))})"
 ```
 
-Expect `dist-tags.next` to be the new prerelease and `latest` unchanged.
+Expect `dist-tags.latest` to be the new version.
 
 ## Tag policy recap
 
-| Plugin version (Git + npm) | Targets DSH harness | model |
+Plugin versions are independent semver; the table records which DSH release
+each was validated against (Git tags carry a `v` prefix, npm versions do not).
+
+| Plugin version | Targets DSH harness | model |
 | --- | --- | --- |
-| `v0.1.0` | `0.1.1-rc.2` | old `dsh-client-runtime` browser model (frozen) |
-| `v0.2.0-rc.1` | `0.1.2-rc.1` | Cordis-Context browser model |
+| `0.1.0` | `0.1.1-rc.2` | old `dsh-client-runtime` browser model (frozen) |
+| `0.2.0` | `0.1.2-rc.1` | Cordis-Context browser model |
