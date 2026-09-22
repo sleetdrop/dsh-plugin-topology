@@ -48,12 +48,14 @@ dsh --profile pt-test --no-open --port 0    # open the printed token URL
 ### 6. Publish — RUN BY HAND (OTP)
 
 ```sh
-cd /Users/jiangyuan/Documents/side-work/dsh-plugin-topology
-pnpm publish --access public
+./scripts/publish.sh
 ```
 
-`--access public` keeps the scoped package public; npm will prompt for your
-OTP — enter it in the terminal (or approve the push on your device).
+The script guards the registry (must be `registry.npmjs.org`, never a read-only
+mirror), checks login (starts an interactive `npm login` if needed), runs
+`pnpm publish --access public --registry https://registry.npmjs.org/`, then
+verifies the resulting dist-tags. npm prompts for your OTP during login and/or
+publish — enter it in the terminal (or approve the push on your device).
 
 ## Verification after publishing
 

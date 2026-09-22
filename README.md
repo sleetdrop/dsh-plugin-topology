@@ -129,16 +129,16 @@ See [NEXT-STEPS.md](NEXT-STEPS.md) for planned renderer improvements.
 
 The full end-to-end release checklist (version bump → build/test → commit/tag →
 headless + browser smoke → publish) is in [`docs/RELEASING.md`](docs/RELEASING.md).
-The final publish requires an interactive OTP, so it is run by hand:
+The final publish requires an interactive OTP, so it is run by hand. A portable
+helper script handles the registry/login guards, publish, and verification:
 
 ```sh
-pnpm publish --access public   # prompts for your OTP
+./scripts/publish.sh   # prompts for login (if needed) and OTP
 ```
 
 `prepublishOnly` runs the build and tests. `publishConfig` pins `access:
-public` and the `registry.npmjs.org` target (machine-local pnpm may default to
-a read-only mirror). If `npm publish` fails with an `EPERM` from the npm cache
-(`root-owned files`), either fix the cache once
+public` and the `registry.npmjs.org` target. If `npm publish` fails with an
+`EPERM` from the npm cache (`root-owned files`), either fix the cache once
 (`sudo chown -R $(id -u):$(id -g) ~/.npm`) or publish through pnpm, whose
 store avoids the npm cache entirely:
 
