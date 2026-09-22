@@ -99,6 +99,7 @@ releases only and skips the fast-moving `alpha` line.
 | `0.1.0` | `0.1.1-rc.2` | Old `dsh-client-runtime` browser model (frozen). |
 | `0.2.0` | `0.1.2-rc.1` | Cordis-Context browser model; client-runtime removed. |
 | `0.3.0` | `0.1.5-rc.1` | Dependency refresh for DSH 0.1.5-rc.1; no code changes required. |
+| `0.3.1` | `0.1.5-rc.3` | Peer refresh to DSH 0.1.5-rc.3 (same 0.1.5 rc line). |
 
 ## Known Limitations
 

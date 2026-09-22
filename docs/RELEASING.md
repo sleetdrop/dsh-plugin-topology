@@ -74,3 +74,4 @@ each was validated against (Git tags carry a `v` prefix, npm versions do not).
 | `0.1.0` | `0.1.1-rc.2` | old `dsh-client-runtime` browser model (frozen) |
 | `0.2.0` | `0.1.2-rc.1` | Cordis-Context browser model |
 | `0.3.0` | `0.1.5-rc.1` | dependency refresh; no code changes |
+| `0.3.1` | `0.1.5-rc.3` | peer refresh to DSH 0.1.5-rc.3 |
