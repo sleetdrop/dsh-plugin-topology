@@ -1,142 +1,63 @@
-# DSH Version Upgrade Workflow
+# DSH Upgrade Guide
 
-DSH evolves rapidly and frequently introduces breaking changes. This document
-describes the upgrade workflow distilled from past adaptations. It is
-intentionally **principle-based rather than step-by-step**, because the specific
-breakages are unpredictable — what broke last time will likely not be what
-breaks next time.
+This plugin tracks DeepSeek Harness rc releases. DSH is in early-stage rapid
+development — every upgrade may break different things in unpredictable ways.
+This document provides orientation, not a checklist. Adapt freely.
 
-## When to Upgrade
+## Orientation
 
-- Your local `dsh --version` reports a newer rc than your plugin's target.
-- A community report or CI failure indicates incompatibility.
-- You want to validate against the latest stable rc before a plugin release.
+**What this plugin touches in DSH**: Cordis internals (`root.registry`,
+`root.reflect.store`, fiber fields) for snapshot; `dsh-typert-protocol` for
+host and client Remote descriptors; `dsh-tools` for tool registration;
+`dsh-client-ui-*` packages for the browser panel. Any of these surfaces can
+change between releases.
 
-Skip alpha releases unless you have a specific reason; this plugin tracks rc
-releases only.
+**Where to look when things break**: TypeScript errors from `pnpm install`
+(prepare script) or `pnpm run build` are the primary signal. DSH does not
+maintain a changelog — the type definitions in
+`node_modules/@deepseek-ai/<pkg>/lib/types/` are the most reliable source of
+truth for what changed. Read them directly rather than guessing.
 
-## The Workflow
+**Two codec files**: Both `src/client/remote-client.ts` (client-side Remote
+contribution) and `src/typert.ts` (host-side typert manifest) carry
+`TypertCodec` descriptors. The host manifest has no compile-time type checking
+against `TypertCodec`, so it can silently drift. Always check both when codec
+types change.
 
-### 1. Discover the Target Version
+**Cordis internals are silent risks**: `snapshot()` reads non-public Cordis
+APIs. These breakages produce no type errors — only wrong data at runtime.
+After any cordis bump, verify snapshot output even if the build passes clean.
 
-Check your running DSH version (`dsh --version`) and query the registry for the
-latest rc of each peer dependency. All `@deepseek-ai/*` client packages share
-the same version number within a release line, so checking one suffices:
+## Compatibility Tracking
 
+Three places must stay in sync after every upgrade:
+
+1. `package.json` — peer/dev dependency versions
+2. `README.md` — "Current release targets…" paragraph + compatibility table
+3. `docs/RELEASING.md` — tag policy table
+
+The compatibility table's Notes column should record *what broke and how it was
+fixed*, not just version numbers. This is institutional memory for future
+upgrades.
+
+## Verification Before Publish
+
+`typecheck` → `build` → `test` must all pass. Then smoke-test with a live
+profile (`dsh --profile pt-test --no-open --port 0`) before publishing. The
+user verifies interactively; do not publish without their confirmation.
+
+After building, confirm the client bundle externals are still minimal:
 ```sh
-pnpm view @deepseek-ai/dsh-tools dist-tags.next
+grep -oE 'require\("[^"]+"\)' lib/client.js | sort -u
 ```
-
-Also check `@deepseek-ai/cordis` separately — it has its own semver track.
-
-### 2. Bump Dependencies
-
-Update `package.json`:
-
-- `"version"`: bump the plugin's own semver (minor for API-compatible refresh,
-  major for breaking changes on our side).
-- `peerDependencies`: widen the range to include the new target (e.g.
-  `^0.1.7-rc.2`).
-- `devDependencies`: pin to the exact new target version.
-- `@deepseek-ai/cordis`: update both peer range and dev pin if a new patch
-  exists.
-
-Run `pnpm install` to resolve the lockfile. **Expect the `prepare` script to
-fail** — this is normal and expected. The build failure *is* the signal that
-tells you what broke.
-
-### 3. Diagnose Breakages from Build Errors
-
-Read the TypeScript errors carefully. They are the primary source of truth for
-what changed. Common categories observed across multiple upgrades:
-
-- **Type shape changes**: fields renamed, removed, or restructured in protocol
-  types (e.g. `TypertCodec.schema` → `TypertCodec.create`). Fix by reading the
-  new type definition in `node_modules/@deepseek-ai/<pkg>/lib/types/` and
-  adapting.
-- **Removed exports**: a function or type you import no longer exists. Check if
-  it was renamed, moved to a different package, or replaced by a new API.
-- **New required fields**: an interface gained mandatory properties. Add them
-  with sensible defaults.
-- **Signature changes**: function parameters or return types shifted. Adapt
-  call sites.
-
-If the build succeeds but tests fail, the breakage is behavioral rather than
-structural — read the test failures and trace back to the changed runtime
-contract.
-
-### 4. Verify
-
-```sh
-pnpm run typecheck   # must pass clean
-pnpm run build       # must produce lib/ and lib/client.js
-pnpm test            # all tests must pass
-```
-
-Optionally smoke-test with a live profile:
-
-```sh
-dsh --profile pt-test --no-open --port 0
-# open the printed token URL, verify the panel loads and functions
-```
-
-### 5. Update Documentation
-
-- `README.md`: update the "Current release targets…" paragraph and add a row
-  to the compatibility table. Note any code changes required (not just
-  dependency bumps).
-- `docs/RELEASING.md`: add a row to the tag policy table.
-
-### 6. Commit, Tag, Push, Publish
-
-Follow the standard release flow in `docs/RELEASING.md`. The commit message
-should note what broke and how it was fixed, not just the version numbers:
-
-```
-chore: release X.Y.Z (targets dsh A.B.C-rc.N)
-
-- <specific API migration or fix>
-- cordis peer bumped to ^X.Y.Z
-```
-
-## Principles
-
-1. **Let the compiler guide you.** Do not preemptively guess what changed. Bump
-   first, then read the errors. TypeScript is the most reliable changelog DSH
-   provides.
-
-2. **Read the new types directly.** When a type changes, open the `.d.ts` file
-   in `node_modules` and read the full definition. Do not rely on memory of
-   the old shape or on external documentation that may lag.
-
-3. **Zod schemas are usually safe.** Zod's `parse()` method satisfies the
-   `TypertSchema` interface. When codec types change, the zod schema itself
-   rarely needs modification — only the wrapper around it.
-
-4. **Cordis internals are the highest risk.** The `snapshot()` method reads
-   `root.registry`, `root.reflect.store`, and fiber fields that are not part
-   of Cordis's stable API. These are the most likely to break silently (no
-   type error, just wrong data). Always verify snapshot output after a cordis
-   bump, even if the build passes.
-
-5. **Client bundle externals should stay minimal.** After building, verify:
-   ```sh
-   grep -oE 'require\("[^"]+"\)' lib/client.js | sort -u
-   ```
-   Only platform-module rows (`react`, `@deepseek-ai/dsh-client-store`, etc.)
-   should appear. Any new external require means the bundler configuration or
-   imports need adjustment.
-
-6. **Document what broke.** Future-you (and other maintainers) benefit from
-   knowing *which* API changed and *how* it was adapted. The compatibility
-   table's "Notes" column exists for this purpose.
+Only platform-module rows should appear.
 
 ## Historical Breakages
 
-| From → To | What Broke | Fix |
-|-----------|-----------|-----|
+| From → To | What Broke | How It Was Fixed |
+|-----------|-----------|-----------------|
 | 0.1.2-rc.1 → 0.1.5-rc.1 | Nothing | Pure dependency refresh |
-| 0.1.5-rc.3 → 0.1.7-rc.2 | `TypertCodec.schema` removed; replaced by `create: () => TypertSchema` factory | Wrapped zod schemas in `create: () => schema`. **Two files** carry codecs: `src/client/remote-client.ts` (client-side) and `src/typert.ts` (host-side typert manifest). Both must be updated — the host manifest is easy to miss since it has no type-checking against `TypertCodec` at compile time. |
+| 0.1.5-rc.3 → 0.1.7-rc.2 | `TypertCodec.schema` → `create: () => TypertSchema` factory | Wrapped zod schemas in `create: () => schema` in both `src/client/remote-client.ts` and `src/typert.ts` |
 
-Add new entries as they occur. This table becomes the institutional memory of
-how DSH tends to break.
+Add entries as they occur. Patterns emerge over time; premature generalization
+does not.
