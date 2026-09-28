@@ -79,8 +79,8 @@ version on their own schedule, independent of which DSH release it targets.
 The table below maps each plugin version to the DSH release it was validated
 against, so pick the plugin version whose target DSH matches your harness.
 
-Current release targets DeepSeek Harness `0.1.5-rc.1`; the `peerDependencies`
-pin the client packages and `@deepseek-ai/cordis@^4.0.2` the snapshot reads
+Current release targets DeepSeek Harness `0.1.7-rc.2`; the `peerDependencies`
+pin the client packages and `@deepseek-ai/cordis@^4.0.4` the snapshot reads
 through. The 0.1.2 rc line removed the old `dsh-client-runtime` browser runtime:
 the client now runs on the Cordis `Context` augmented by the shell baseline
 renderer (`dsh-client-ui-renderer` → `ctx.slots`), `dsh-client-store`
@@ -100,6 +100,7 @@ releases only and skips the fast-moving `alpha` line.
 | `0.2.0` | `0.1.2-rc.1` | Cordis-Context browser model; client-runtime removed. |
 | `0.3.0` | `0.1.5-rc.1` | Dependency refresh for DSH 0.1.5-rc.1; no code changes required. |
 | `0.3.1` | `0.1.5-rc.3` | Peer refresh to DSH 0.1.5-rc.3 (same 0.1.5 rc line). |
+| `0.4.0` | `0.1.7-rc.2` | TypertCodec API migration (`schema` → `create`); cordis ^4.0.4. |
 
 ## Known Limitations
 

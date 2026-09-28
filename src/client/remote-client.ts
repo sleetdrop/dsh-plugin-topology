@@ -111,7 +111,7 @@ export const TYPERT_REMOTE: TypertRemoteContribution = {
       result: {
         mode: 'strict',
         typeSymbol: '@sleetdrop/dsh-plugin-topology/types#TopologyAnalysis',
-        schema: analyze_result$schema,
+        create: () => analyze_result$schema,
       },
     },
     {
@@ -128,7 +128,7 @@ export const TYPERT_REMOTE: TypertRemoteContribution = {
           codec: {
             mode: 'strict',
             typeSymbol: '@sleetdrop/dsh-plugin-topology/types#RenderFormat',
-            schema: render_parameter_0$schema,
+            create: () => render_parameter_0$schema,
           },
         },
         {
@@ -138,14 +138,14 @@ export const TYPERT_REMOTE: TypertRemoteContribution = {
           codec: {
             mode: 'strict',
             typeSymbol: '@sleetdrop/dsh-plugin-topology/types#Rankdir',
-            schema: render_parameter_1$schema,
+            create: () => render_parameter_1$schema,
           },
         },
       ],
       result: {
         mode: 'strict',
         typeSymbol: '@sleetdrop/dsh-plugin-topology#pluginTopology/render:result',
-        schema: render_result$schema,
+        create: () => render_result$schema,
       },
     },
   ],
