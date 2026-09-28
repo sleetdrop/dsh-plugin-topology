@@ -1,14 +1,36 @@
 # Releasing
 
 This plugin uses its **own independent semantic version** — it never mirrors
-the DeepSeek Harness version. New plugin features and bugfixes bump the plugin
-version on their own schedule. The only thing that tracks DSH is a documented
+the DeepSeek Harness version. The only thing that tracks DSH is a documented
 compatibility mapping: each plugin version states the DSH release it was
 validated against (see the "Compatibility" table in
 [`README.md`](../README.md#compatibility)).
 
 Because publishing requires an interactive OTP (2FA), the final `pnpm publish`
 step is run **by a human, by hand**. Everything before it is safe to script.
+
+## Versioning Policy
+
+Follow semver strictly based on **what changed for the plugin's users**, not
+what changed upstream in DSH:
+
+- **patch** (`0.x.Y`): DSH compatibility adaptation, dependency bumps, build
+  fixes, documentation updates — nothing user-visible changed in behavior or
+  API. This is the most common bump when tracking DSH releases.
+- **minor** (`0.X.0`): new features, new tools, new UI capabilities, new
+  exported APIs — backwards-compatible additions.
+- **major** (`X.0.0`): breaking changes to the plugin's own public API or
+  behavior.
+
+A DSH upgrade that requires code changes but produces no user-visible
+difference is still a **patch** bump. Do not inflate the version number just
+because the upstream had a large jump or because the adaptation was difficult.
+
+## Distribution Policy
+
+- **npm registry** is the canonical distribution channel.
+- **Git tags** (`v0.x.y`) are the canonical source reference.
+- **GitHub Releases** are NOT used. Do not create them. Tags + npm suffice.
 
 ## One release, end to end
 
