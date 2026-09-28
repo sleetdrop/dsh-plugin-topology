@@ -103,7 +103,7 @@ export const TYPERT = {
       result: {
         mode: 'strict',
         typeSymbol: '@sleetdrop/dsh-plugin-topology/types#TopologyAnalysis',
-        schema: topologyAnalysisSchema,
+        create: () => topologyAnalysisSchema,
       },
     },
     {
@@ -120,7 +120,7 @@ export const TYPERT = {
           codec: {
             mode: 'strict',
             typeSymbol: '@sleetdrop/dsh-plugin-topology/types#RenderFormat',
-            schema: z.union([z.literal('json'), z.literal('dot'), z.literal('svg')]),
+            create: () => z.union([z.literal('json'), z.literal('dot'), z.literal('svg')]),
           },
         },
         {
@@ -130,14 +130,14 @@ export const TYPERT = {
           codec: {
             mode: 'strict',
             typeSymbol: '@sleetdrop/dsh-plugin-topology/types#Rankdir',
-            schema: z.union([z.literal('TB'), z.literal('LR')]),
+            create: () => z.union([z.literal('TB'), z.literal('LR')]),
           },
         },
       ],
       result: {
         mode: 'strict',
         typeSymbol: '@sleetdrop/dsh-plugin-topology#pluginTopology/render:result',
-        schema: z.string(),
+        create: () => z.string(),
       },
     },
   ],

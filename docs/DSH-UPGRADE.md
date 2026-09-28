@@ -136,7 +136,7 @@ chore: release X.Y.Z (targets dsh A.B.C-rc.N)
 | From → To | What Broke | Fix |
 |-----------|-----------|-----|
 | 0.1.2-rc.1 → 0.1.5-rc.1 | Nothing | Pure dependency refresh |
-| 0.1.5-rc.3 → 0.1.7-rc.2 | `TypertCodec.schema` removed; replaced by `create: () => TypertSchema` factory | Wrapped zod schemas in `create: () => schema` |
+| 0.1.5-rc.3 → 0.1.7-rc.2 | `TypertCodec.schema` removed; replaced by `create: () => TypertSchema` factory | Wrapped zod schemas in `create: () => schema`. **Two files** carry codecs: `src/client/remote-client.ts` (client-side) and `src/typert.ts` (host-side typert manifest). Both must be updated — the host manifest is easy to miss since it has no type-checking against `TypertCodec` at compile time. |
 
 Add new entries as they occur. This table becomes the institutional memory of
 how DSH tends to break.
