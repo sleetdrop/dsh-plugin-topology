@@ -76,8 +76,19 @@ dsh --profile pt-test --no-open --port 0    # open the printed token URL
 The script guards the registry (must be `registry.npmjs.org`, never a read-only
 mirror), checks login (starts an interactive `npm login` if needed), runs
 `pnpm publish --access public --registry https://registry.npmjs.org/`, then
-verifies the resulting dist-tags. npm prompts for your OTP during login and/or
-publish — enter it in the terminal (or approve the push on your device).
+verifies the resulting dist-tags.
+
+**Expect the login step to run even when you are already logged in.** The token
+in `~/.npmrc` is a granular access token: it publishes fine, but `npm whoami`
+answers `E401`, so the guard cannot tell it apart from a logged-out shell and
+starts `npm login`. This is harmless — login and publish both require an OTP
+anyway, so the extra round trip costs nothing — and it is not a sign that
+anything is misconfigured. Do not "fix" it by dropping the guard: the guard is
+the only thing that catches a genuinely missing login, and without it that
+failure surfaces much later as a confusing `E404 Not Found` on `PUT`.
+
+npm prompts for your OTP during login and/or publish — enter it in the terminal
+(or approve the push on your device).
 
 ## Verification after publishing
 
@@ -87,6 +98,30 @@ curl -s "https://registry.npmjs.org/@sleetdrop%2fdsh-plugin-topology" \
 ```
 
 Expect `dist-tags.latest` to be the new version.
+
+**A 404 immediately after publishing does not mean the publish failed.** The
+registry serves both the package document and the per-version endpoint through a
+CDN, so a just-published version can take a minute or two to appear: `GET
+/@sleetdrop%2fdsh-plugin-topology/<version>` answers
+`404 {"version not found"}`, a cache-busted packument still reports the old
+`latest`, and `dist-tags` lags too. Treat the publisher's own success output as
+the signal, then re-poll after a couple of minutes before investigating. `0.5.0`
+was briefly misdiagnosed as a failed publish for exactly this reason; the fix is
+patience, not a re-run.
+
+## Carrying unreleased fixes
+
+Small post-release fixes may land on `main` with no tag and no release; the next
+version picks them up. `main` then sits ahead of the newest tag while
+`package.json` still holds the *published* version. That is intentional, and it
+doubles as a safety net: forgetting to bump means `pnpm publish` fails with
+"version already exists" rather than silently re-publishing over a live version.
+
+Bump before the next publish, and fold the carried changes into the new
+compatibility row. (`0.5.0` shipped `lib/client/NodeDetailPanel.{js,d.ts}`, a
+dead module `tsc` left behind after that source was deleted — the `build` script
+now wipes `lib/` first, and the cleanup rides along in the next release rather
+than earning a version bump of its own.)
 
 ## Tag policy recap
 

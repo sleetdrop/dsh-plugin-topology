@@ -27,6 +27,13 @@ fi
 # 2. Login guard — confirm an authenticated identity, or start an interactive
 #    npm login (browser OAuth / OTP). Publishing still requires a human for
 #    the OTP step, which is intentional.
+#
+#    NOTE: this guard fires even when a working token is present. The token in
+#    ~/.npmrc is a granular access token: it publishes fine, but `npm whoami`
+#    answers E401, so it looks logged-out here. Expected, not a misconfig —
+#    login and publish both need an OTP anyway, so the extra step is free.
+#    Keep the guard: it is what catches a genuinely missing login, which
+#    otherwise only surfaces later as a confusing E404 on PUT.
 if ! npm whoami --registry "$REGISTRY" >/dev/null 2>&1; then
   echo "Not logged in — starting npm login..." >&2
   npm login --registry "$REGISTRY"
