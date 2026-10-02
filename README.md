@@ -121,7 +121,7 @@ releases only and skips the fast-moving `alpha` line.
 | `0.3.0` | `0.1.5-rc.1` | Dependency refresh for DSH 0.1.5-rc.1; no code changes required. |
 | `0.3.1` | `0.1.5-rc.3` | Peer refresh to DSH 0.1.5-rc.3 (same 0.1.5 rc line). |
 | `0.4.0` | `0.1.7-rc.2` | TypertCodec API migration (`schema` → `create`); cordis ^4.0.4. |
-| `0.5.0` | `0.2.0-rc.2` | Node detail popover + direction-scoped dependency highlight; panel colors rebound to the real DSH theme tokens (dark theme); peer refresh to DSH 0.2.0-rc.2 (no code changes required). |
+| `0.5.0` | `0.2.0-rc.2` | Node detail popover + direction-scoped dependency highlight; panel colors rebound to the real DSH theme tokens (dark theme). The peer refresh to DSH 0.2.0-rc.2 needed no source changes of its own. |
 
 ## Known Limitations
 
