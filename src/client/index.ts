@@ -105,8 +105,8 @@ export function apply(ctx: Context): void {
         }
         return result.value
       },
-      render: async (format: 'json' | 'dot' | 'svg', rankdir: 'TB' | 'LR') => {
-        const result = await namespaceOf().render(format, rankdir)
+      render: async (format: 'json' | 'dot' | 'svg', rankdir: 'TB' | 'LR', theme?: 'light' | 'dark') => {
+        const result = await namespaceOf().render(format, rankdir, theme)
         if (!result.ok) {
           throw new Error(`pluginTopology.render failed: ${result.error.code}: ${result.error.message}`)
         }

@@ -12,6 +12,48 @@
 
 import type { GraphMetrics, PluginNode, PluginState, Rankdir, TopologyAnalysis } from './types.ts'
 
+/** Color palette for DOT rendering, keyed by theme. */
+export interface DotPalette {
+  /** Graph background; matches the app viewport so the inline SVG looks seamless. */
+  readonly canvas: string
+  readonly nodeFill: string
+  readonly nodeStroke: string
+  readonly nodeFont: string
+  readonly edgeStroke: string
+  readonly edgeFont: string
+  readonly errorStroke: string
+  readonly errorFont: string
+  readonly clusterFill: string
+  readonly clusterStroke: string
+}
+
+export const LIGHT_PALETTE: DotPalette = {
+  canvas: '#ffffff',
+  nodeFill: '#ffffff',
+  nodeStroke: '#e2e8f0',
+  nodeFont: '#334155',
+  edgeStroke: '#e2e8f0',
+  edgeFont: '#94a3b8',
+  errorStroke: '#ec1313',
+  errorFont: '#ec1313',
+  clusterFill: '#f8fafc',
+  clusterStroke: '#94a3b8',
+}
+
+export const DARK_PALETTE: DotPalette = {
+  /** DeepSeek Harness dark `--dsw-alias-bg-layer-1`. */
+  canvas: '#232324',
+  nodeFill: '#2c2c2e',
+  nodeStroke: '#ffffff29',
+  nodeFont: '#e2e8f0',
+  edgeStroke: '#ffffff1f',
+  edgeFont: '#81858c',
+  errorStroke: '#f25a5a',
+  errorFont: '#f25a5a',
+  clusterFill: '#151517',
+  clusterStroke: '#81858c',
+}
+
 /** One plugin node with its metrics in the node-link document. */
 export interface NodeLinkNode {
   readonly id: string
@@ -95,7 +137,7 @@ function escapeDot(value: string): string {
  * never stretch the layout. Plugins with an unresolved dependency get a red
  * stroke.
  */
-export function renderDot(analysis: TopologyAnalysis, rankdir: Rankdir): string {
+export function renderDot(analysis: TopologyAnalysis, rankdir: Rankdir, palette: DotPalette = LIGHT_PALETTE): string {
   const unresolvedIds = new Set(analysis.graph.unresolved.map(dep => dep.plugin))
   const nodes = analysis.collapsed.nodes
   const ROOT_ID = 'p:0'
@@ -113,15 +155,16 @@ export function renderDot(analysis: TopologyAnalysis, rankdir: Rankdir): string 
   const lines: string[] = [
     'digraph plugin_topology {',
     `  rankdir=${rankdir};`,
+    `  bgcolor="${palette.canvas}";`,
     '  nodesep=0.3;',
     '  ranksep=0.7;',
     '  splines=true;',
-    '  node [shape=oval, style="filled", fillcolor="#ffffff", color="#cbd5e1", fontcolor="#64748b", penwidth=0.8, fontname="Helvetica", fontsize=8, margin="0.16,0.11"];',
-    '  edge [color="#cbd5e1", penwidth=0.8, arrowsize=0.55, fontname="Helvetica", fontsize=7, fontcolor="#94a3b8"];',
+    `  node [shape=oval, style="filled", fillcolor="${palette.nodeFill}", color="${palette.nodeStroke}", fontcolor="${palette.nodeFont}", penwidth=0.8, fontname="Helvetica", fontsize=8, margin="0.16,0.11"];`,
+    `  edge [color="${palette.edgeStroke}", penwidth=0.8, arrowsize=0.55, fontname="Helvetica", fontsize=7, fontcolor="${palette.edgeFont}"];`,
   ]
   for (const node of merged.nodes) {
-    const stroke = node.unresolved ? ', color="#dc2626", fontcolor="#dc2626", penwidth=1.5' : ''
-    lines.push(`  "${node.id}" [label="${mergedLabel(node)}"${stroke}];`)
+    const stroke = node.unresolved ? `, color="${palette.errorStroke}", fontcolor="${palette.errorFont}", penwidth=1.5` : ''
+    lines.push(`  "${node.id}" [id="node-${node.id}", label="${mergedLabel(node)}"${stroke}];`)
   }
   const seen = new Set<string>()
   for (const edge of analysis.collapsed.edges) {
@@ -195,22 +238,23 @@ export function isolatedNodes(analysis: TopologyAnalysis): readonly PluginNode[]
 }
 
 /** Serialize the isolated plugins as a standalone dashed-cluster DOT graph. */
-export function renderIsolatedDot(analysis: TopologyAnalysis, rankdir: Rankdir): string {
+export function renderIsolatedDot(analysis: TopologyAnalysis, rankdir: Rankdir, palette: DotPalette = LIGHT_PALETTE): string {
   const isolated = isolatedNodes(analysis)
   const merged = mergeByName(isolated, new Set<string>())
   const lines: string[] = [
     'digraph plugin_topology_isolated {',
     `  rankdir=${rankdir};`,
+    `  bgcolor="${palette.canvas}";`,
     '  nodesep=0.18;',
     '  ranksep=0.4;',
-    '  node [shape=oval, style="filled", fillcolor="#ffffff", color="#cbd5e1", fontcolor="#64748b", penwidth=0.8, fontname="Helvetica", fontsize=8, margin="0.16,0.11"];',
+    `  node [shape=oval, style="filled", fillcolor="${palette.nodeFill}", color="${palette.nodeStroke}", fontcolor="${palette.nodeFont}", penwidth=0.8, fontname="Helvetica", fontsize=8, margin="0.16,0.11"];`,
     '  subgraph "cluster_isolated" {',
     '    label="isolated";',
-    '    style="rounded,dashed"; fillcolor="#f8fafc"; color="#94a3b8"; fontsize=9; fontcolor="#64748b";',
+    `    style="rounded,dashed"; fillcolor="${palette.clusterFill}"; color="${palette.clusterStroke}"; fontsize=9; fontcolor="${palette.nodeFont}";`,
     '    rank=same;',
   ]
   for (const node of merged.nodes) {
-    lines.push(`    "${node.id}" [label="${mergedLabel(node)}"];`)
+    lines.push(`    "${node.id}" [id="node-${node.id}", label="${mergedLabel(node)}"];`)
   }
   lines.push('  }')
   lines.push('}')
@@ -228,23 +272,24 @@ function instanceLabel(node: PluginNode): string {
  * the JSON export; used for the downloadable DOT. The SVG split (main/isolated)
  * is an internal layout tradeoff and is not exposed here.
  */
-export function renderCompleteDot(analysis: TopologyAnalysis, rankdir: Rankdir): string {
+export function renderCompleteDot(analysis: TopologyAnalysis, rankdir: Rankdir, palette: DotPalette = LIGHT_PALETTE): string {
   const unresolvedIds = new Set(analysis.graph.unresolved.map(dep => dep.plugin))
   const isolated = isolatedNodes(analysis)
   const isolatedIds = new Set(isolated.map(node => node.id))
   const lines: string[] = [
     'digraph plugin_topology {',
     `  rankdir=${rankdir};`,
+    `  bgcolor="${palette.canvas}";`,
     '  nodesep=0.3;',
     '  ranksep=0.7;',
     '  splines=true;',
-    '  node [shape=oval, style="filled", fillcolor="#ffffff", color="#cbd5e1", fontcolor="#64748b", penwidth=0.8, fontname="Helvetica", fontsize=8, margin="0.16,0.11"];',
-    '  edge [color="#cbd5e1", penwidth=0.8, arrowsize=0.55, fontname="Helvetica", fontsize=7, fontcolor="#94a3b8"];',
+    `  node [shape=oval, style="filled", fillcolor="${palette.nodeFill}", color="${palette.nodeStroke}", fontcolor="${palette.nodeFont}", penwidth=0.8, fontname="Helvetica", fontsize=8, margin="0.16,0.11"];`,
+    `  edge [color="${palette.edgeStroke}", penwidth=0.8, arrowsize=0.55, fontname="Helvetica", fontsize=7, fontcolor="${palette.edgeFont}"];`,
   ]
   for (const node of analysis.collapsed.nodes) {
     if (isolatedIds.has(node.id)) continue
-    const stroke = unresolvedIds.has(node.id) ? ', color="#dc2626", fontcolor="#dc2626", penwidth=1.5' : ''
-    lines.push(`  "${node.id}" [label="${instanceLabel(node)}"${stroke}];`)
+    const stroke = unresolvedIds.has(node.id) ? `, color="${palette.errorStroke}", fontcolor="${palette.errorFont}", penwidth=1.5` : ''
+    lines.push(`  "${node.id}" [id="node-${node.id}", label="${instanceLabel(node)}"${stroke}];`)
   }
   for (const edge of analysis.collapsed.edges) {
     lines.push(`  "${edge.source}" -> "${edge.target}" [label="${escapeDot(edge.service)}"];`)
@@ -252,10 +297,10 @@ export function renderCompleteDot(analysis: TopologyAnalysis, rankdir: Rankdir):
   if (isolated.length > 0) {
     lines.push('  subgraph "cluster_isolated" {')
     lines.push('    label="isolated";')
-    lines.push('    style="rounded,dashed"; fillcolor="#f8fafc"; color="#94a3b8"; fontsize=9; fontcolor="#64748b";')
+    lines.push(`    style="rounded,dashed"; fillcolor="${palette.clusterFill}"; color="${palette.clusterStroke}"; fontsize=9; fontcolor="${palette.nodeFont}";`)
     lines.push('    rank=same;')
     for (const node of isolated) {
-      lines.push(`    "${node.id}" [label="${instanceLabel(node)}"];`)
+      lines.push(`    "${node.id}" [id="node-${node.id}", label="${instanceLabel(node)}"];`)
     }
     lines.push('  }')
   }
@@ -282,9 +327,10 @@ function splitSvg(svg: string): SvgParts {
 /**
  * Compose two Graphviz SVGs into one document. The isolated graph is placed to
  * the side (LR) or below (TB) of the main graph with a fixed gap, and centered
- * along the graph's perpendicular axis, so the exported SVG is one image.
+ * along the graph's perpendicular axis, so the exported SVG is one image. A
+ * canvas rect behind both keeps the gap opaque instead of showing through.
  */
-export function composeGraphvizSvgs(main: string, isolated: string, rankdir: Rankdir): string {
+export function composeGraphvizSvgs(main: string, isolated: string, rankdir: Rankdir, canvas = '#ffffff'): string {
   const m = splitSvg(main)
   const iso = splitSvg(isolated)
   if (iso.width === 0 || iso.height === 0) return main
@@ -312,5 +358,5 @@ export function composeGraphvizSvgs(main: string, isolated: string, rankdir: Ran
     width = Math.max(m.width, ix + iso.width)
     height = m.height + gap + iso.height
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img"><g transform="translate(${mx},${my})">${m.inner}</g><g transform="translate(${ix},${iy})">${isoInner}</g></svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img"><rect x="0" y="0" width="${width}" height="${height}" fill="${canvas}"/><g transform="translate(${mx},${my})">${m.inner}</g><g transform="translate(${ix},${iy})">${isoInner}</g></svg>`
 }

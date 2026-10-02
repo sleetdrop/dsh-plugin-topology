@@ -16,7 +16,7 @@ import type { Rankdir, RenderFormat, TopologyAnalysis } from '../types.ts'
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteMap {
     'pluginTopology/analyze': () => Promise<RemoteResult<TopologyAnalysis>>
-    'pluginTopology/render': (format: RenderFormat, rankdir: Rankdir) => Promise<RemoteResult<string>>
+    'pluginTopology/render': (format: RenderFormat, rankdir: Rankdir, theme?: 'light' | 'dark') => Promise<RemoteResult<string>>
   }
   interface TypertRemoteNamespaceMap {
     'pluginTopology': import('@deepseek-ai/dsh-typert-protocol').TypertRemoteNamespace<'pluginTopology'>

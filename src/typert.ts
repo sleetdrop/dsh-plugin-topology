@@ -133,6 +133,17 @@ export const TYPERT = {
             create: () => z.union([z.literal('TB'), z.literal('LR')]),
           },
         },
+        {
+          name: 'theme',
+          wire: 'theme',
+          source: 'json',
+          acceptsUndefined: true,
+          codec: {
+            mode: 'strict',
+            typeSymbol: '@sleetdrop/dsh-plugin-topology/types#Theme',
+            create: () => z.union([z.literal('light'), z.literal('dark')]).optional(),
+          },
+        },
       ],
       result: {
         mode: 'strict',

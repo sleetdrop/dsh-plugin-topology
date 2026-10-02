@@ -162,8 +162,8 @@ describe('renderDot', () => {
     const base = buildGraph([['app', 'db']])
     const graph: TopologyGraph = { ...base, unresolved: [{ plugin: 'app', service: 'missing', state: 'PENDING' }] }
     const dot = renderDot(analyzeGraph(graph), 'TB')
-    assert.ok(dot.includes('"app" [label="app [app]", color="#dc2626", fontcolor="#dc2626", penwidth=1.5]'))
-    assert.ok(dot.includes('"db" [label="db [db]"]'))
+    assert.ok(dot.includes('"app" [id="node-app", label="app [app]", color="#ec1313", fontcolor="#ec1313", penwidth=1.5]'))
+    assert.ok(dot.includes('"db" [id="node-db", label="db [db]"]'))
   })
 
   it('renders only the connected plugins and moves isolated ones to a separate graph', () => {
@@ -186,17 +186,17 @@ describe('renderDot', () => {
     const analysis = analyzeGraph(graph)
     const dot = renderDot(analysis, 'TB')
 
-    assert.ok(dot.includes('  "p:10" [label="provider [10]"]'))
-    assert.ok(dot.includes('  "p:20" [label="consumer [20]"]'))
-    assert.ok(!/^  "p:(30|40)" \[label=/m.test(dot))
+    assert.ok(dot.includes('  "p:10" [id="node-p:10", label="provider [10]"]'))
+    assert.ok(dot.includes('  "p:20" [id="node-p:20", label="consumer [20]"]'))
+    assert.ok(!/^  "p:(30|40)" \[id=/m.test(dot))
     assert.ok(!dot.includes('cluster_isolated'))
 
     assert.deepEqual(isolatedNodes(analysis).map(node => node.id), ['p:30', 'p:40'])
     const isoDot = renderIsolatedDot(analysis, 'TB')
     assert.ok(isoDot.includes('rankdir=TB'))
     assert.ok(isoDot.includes('subgraph "cluster_isolated" {'))
-    assert.ok(isoDot.includes('"p:30" [label="lonely-a [30]"]'))
-    assert.ok(isoDot.includes('"p:40" [label="lonely-b [40]"]'))
+    assert.ok(isoDot.includes('"p:30" [id="node-p:30", label="lonely-a [30]"]'))
+    assert.ok(isoDot.includes('"p:40" [id="node-p:40", label="lonely-b [40]"]'))
   })
 
   it('renders the complete DOT for download, including the isolated cluster', () => {
@@ -218,11 +218,11 @@ describe('renderDot', () => {
     }
     const dot = renderCompleteDot(analyzeGraph(graph), 'TB')
 
-    assert.ok(dot.includes('  "p:10" [label="provider [10]"]'))
-    assert.ok(dot.includes('  "p:20" [label="consumer [20]"]'))
+    assert.ok(dot.includes('  "p:10" [id="node-p:10", label="provider [10]"]'))
+    assert.ok(dot.includes('  "p:20" [id="node-p:20", label="consumer [20]"]'))
     assert.ok(dot.includes('subgraph "cluster_isolated" {'))
-    assert.ok(dot.includes('"p:30" [label="lonely-a [30]"]'))
-    assert.ok(dot.includes('"p:40" [label="lonely-b [40]"]'))
+    assert.ok(dot.includes('"p:30" [id="node-p:30", label="lonely-a [30]"]'))
+    assert.ok(dot.includes('"p:40" [id="node-p:40", label="lonely-b [40]"]'))
   })
 
   it('composes the main and isolated graphs into one SVG document', () => {

@@ -23,7 +23,7 @@ import { Graphviz } from '@hpcc-js/wasm-graphviz'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from 'zod'
 import { analyzeGraph } from './metrics.ts'
-import { composeGraphvizSvgs, isolatedNodes, renderCompleteDot, renderDot, renderIsolatedDot, renderJson } from './render.ts'
+import { composeGraphvizSvgs, DARK_PALETTE, isolatedNodes, LIGHT_PALETTE, renderCompleteDot, renderDot, renderIsolatedDot, renderJson, type DotPalette } from './render.ts'
 import type {
   PluginState,
   Rankdir,
@@ -163,15 +163,16 @@ export class PluginTopologyService extends TypertRemoteService {
    * @returns the serialized document for the format.
    */
   @Remote('render')
-  async render(format: RenderFormat, rankdir: Rankdir): Promise<string> {
+  async render(format: RenderFormat, rankdir: Rankdir, theme?: 'light' | 'dark'): Promise<string> {
+    const palette: DotPalette = theme === 'dark' ? DARK_PALETTE : LIGHT_PALETTE
     const analysis = this.analyze()
     if (format === 'json') return renderJson(analysis)
-    if (format === 'dot') return renderCompleteDot(analysis, rankdir)
+    if (format === 'dot') return renderCompleteDot(analysis, rankdir, palette)
     const graphviz = await (this.graphvizPromise ??= Graphviz.load())
-    const mainSvg = graphviz.dot(renderDot(analysis, rankdir), 'svg')
+    const mainSvg = graphviz.dot(renderDot(analysis, rankdir, palette), 'svg')
     if (isolatedNodes(analysis).length === 0) return mainSvg
-    const isolatedSvg = graphviz.dot(renderIsolatedDot(analysis, rankdir), 'svg')
-    return composeGraphvizSvgs(mainSvg, isolatedSvg, rankdir)
+    const isolatedSvg = graphviz.dot(renderIsolatedDot(analysis, rankdir, palette), 'svg')
+    return composeGraphvizSvgs(mainSvg, isolatedSvg, rankdir, palette.canvas)
   }
 }
 

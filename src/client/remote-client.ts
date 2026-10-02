@@ -96,6 +96,7 @@ const analyze_result$schema = z.object({
 
 const render_parameter_0$schema = z.union([z.literal('json'), z.literal('dot'), z.literal('svg')])
 const render_parameter_1$schema = z.union([z.literal('TB'), z.literal('LR')])
+const render_parameter_2$schema = z.union([z.literal('light'), z.literal('dark')]).optional()
 const render_result$schema = z.string()
 
 export const TYPERT_REMOTE: TypertRemoteContribution = {
@@ -139,6 +140,17 @@ export const TYPERT_REMOTE: TypertRemoteContribution = {
             mode: 'strict',
             typeSymbol: '@sleetdrop/dsh-plugin-topology/types#Rankdir',
             create: () => render_parameter_1$schema,
+          },
+        },
+        {
+          name: 'theme',
+          wire: 'theme',
+          source: 'json',
+          acceptsUndefined: true,
+          codec: {
+            mode: 'strict',
+            typeSymbol: '@sleetdrop/dsh-plugin-topology/types#Theme',
+            create: () => render_parameter_2$schema,
           },
         },
       ],

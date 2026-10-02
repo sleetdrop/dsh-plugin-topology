@@ -1,0 +1,177 @@
+.popover {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  min-width: 180px;
+  max-width: 280px;
+  border: 1px solid var(--dsw-alias-border-l3, #0000001f);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2, #ffffff);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+  font-size: 12px;
+  pointer-events: auto;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nameLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dsw-alias-state-business-primary, #4176e6);
+  text-decoration: none;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.nameLink:hover {
+  text-decoration: underline;
+}
+
+.namePlain {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary, #0f172a);
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.closeButton {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dsw-text-secondary, #64748b);
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
+  color: var(--dsw-text-primary, #0f172a);
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stateBadge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.5;
+  width: fit-content;
+}
+
+.stateActive {
+  background: color-mix(in srgb, var(--dsw-static-deepseek-50, #edf3fe) 60%, transparent);
+  color: var(--dsw-alias-state-business-primary, #4176e6);
+}
+
+.stateFailed {
+  background: color-mix(in srgb, var(--dsw-static-red-50, #fef2f2) 60%, transparent);
+  color: var(--dsw-alias-state-error-primary, #ec1313);
+}
+
+.stateOther {
+  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
+  color: var(--dsw-text-secondary, #64748b);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.rowLabel {
+  font-size: 11px;
+  color: var(--dsw-text-secondary, #64748b);
+  white-space: nowrap;
+}
+
+.rowValue {
+  font-size: 11px;
+  color: var(--dsw-text-primary, #0f172a);
+  word-break: break-all;
+}
+
+.sourceValue {
+  font-family: var(--ds-font-family-code, monospace);
+  font-size: 10px;
+}
+
+/* deg⁺ / deg⁻ pills: graph-theory degree readout that also drives the highlight. */
+.depPills {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.depPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border: 1px solid var(--dsw-alias-border-l2, #0000001a);
+  border-radius: 999px;
+  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
+  color: var(--dsw-text-secondary, #64748b);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.depPill:hover:not(:disabled) {
+  border-color: var(--dsw-alias-state-business-primary, #4176e6);
+  color: var(--dsw-alias-state-business-primary, #4176e6);
+}
+
+.depPill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.depPillActive,
+.depPillActive:hover:not(:disabled) {
+  border-color: var(--dsw-alias-state-business-primary, #4176e6);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary, #4176e6) 14%, transparent);
+  color: var(--dsw-alias-state-business-primary, #4176e6);
+}
+
+.degMark {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.degValue {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.unresolvedBadge {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--dsw-static-red-50, #fef2f2) 60%, transparent);
+  color: var(--dsw-alias-state-error-primary, #ec1313);
+}

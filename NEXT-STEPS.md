@@ -17,16 +17,23 @@ unresolved dependencies (red stroke). Color nodes by state instead:
 This surfaces the most common diagnostic question — "which plugins did not
 load successfully" — at a glance.
 
-## Click a node for details
-
-The snapshot captures each plugin's `inject` (service names) and `source`
-(module specifier), but the UI never shows them. Clicking a node could open a
-small popover with state, injected services, module path, and degree
-centrality. Requires switching the SVG from an `<img>` to inline rendering
-with pointer hit-testing — a medium-sized change.
+Worth noting the boundary: when DSH cannot boot at all, this panel cannot
+render either, so pre-boot diagnosis belongs to a CLI tool. State coloring
+targets the other case — DSH runs, but some plugin misbehaved.
 
 ## Deferred ideas
 
 - Show an instance count (`timer ×3`) instead of the ordinal list. Deferred:
   the ordinal list doubles as a startup-order hint, and adding the count
   crowds the label.
+- Transitively affected plugins ("if I remove X, what breaks?"). Deferred:
+  direct in/out degree already covers the common question, and transitive
+  closure is a query better served by the JSON export than by the picture.
+
+## Done
+
+- **Click a node for details** — shipped in `0.5.0` as a node-anchored popover
+  (state, module source, drawn in/out degree, npm link) with `deg⁺`/`deg⁻`
+  toggles that light one dependency direction at a time. The SVG moved from an
+  `<img>` to inline rendering; highlight classes are applied to the Graphviz DOM
+  and never baked into the exported SVG.

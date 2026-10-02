@@ -26,6 +26,11 @@ export type PluginTopologyLocaleKey =
   | 'legendUnresolved'
   | 'legendIsolated'
   | 'legendId'
+  | 'popoverClose'
+  | 'popoverSource'
+  | 'popoverOutgoing'
+  | 'popoverIncoming'
+  | 'popoverUnresolved'
 
 export const en: Record<PluginTopologyLocaleKey, string> = {
   title: 'Plugin topology',
@@ -53,6 +58,11 @@ export const en: Record<PluginTopologyLocaleKey, string> = {
   legendUnresolved: 'Unresolved dependency',
   legendIsolated: 'Isolated plugin',
   legendId: 'Instance creation ordinal within this run',
+  popoverClose: 'Close',
+  popoverSource: 'Source',
+  popoverOutgoing: 'Highlight outgoing dependencies (deg⁺)',
+  popoverIncoming: 'Highlight incoming dependents (deg⁻)',
+  popoverUnresolved: 'unresolved',
 }
 
 export const zh: Record<PluginTopologyLocaleKey, string> = {
@@ -81,4 +91,9 @@ export const zh: Record<PluginTopologyLocaleKey, string> = {
   legendUnresolved: '存在未解析依赖',
   legendIsolated: '孤立插件（无依赖边）',
   legendId: '本次运行内的创建序号',
+  popoverClose: '关闭',
+  popoverSource: '来源',
+  popoverOutgoing: '高亮它依赖的插件（出度 deg⁺）',
+  popoverIncoming: '高亮依赖它的插件（入度 deg⁻）',
+  popoverUnresolved: '未解析',
 }

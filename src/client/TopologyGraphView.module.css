@@ -11,8 +11,8 @@
   min-height: 0;
   overflow: hidden;
   cursor: grab;
-  background: #ffffff;
-  border: 1px solid var(--dsw-border, #cbd5e1);
+  background: var(--dsw-alias-bg-layer-1, #ffffff);
+  border: 1px solid var(--dsw-alias-border-l2, #0000001a);
   border-radius: 8px;
 }
 
@@ -26,8 +26,78 @@
   left: 0;
   transform-origin: 0 0;
   user-select: none;
-  pointer-events: none;
+  width: max-content;
 }
+
+/* ── Selection & dependency highlight ──
+   Graphviz bakes `#rrggbbaa` alpha into `stroke-opacity` / `fill-opacity`, so
+   every highlight rule has to reset those as well, or the brand ring and the
+   arrowheads stay translucent. The spline `path` must never be filled. */
+
+/* Light hover ring: a hint that the node is tappable, no dimming. */
+.graphImg :global(.topo-hover-node) > ellipse,
+.graphImg :global(.topo-hover-node) > polygon {
+  stroke: var(--dsw-alias-state-business-primary, #4176e6);
+  stroke-opacity: 0.5;
+  stroke-width: 1.6;
+}
+
+/* The selected node keeps a ring while its popover is open. */
+.graphImg :global(.topo-selected-node) > ellipse,
+.graphImg :global(.topo-selected-node) > polygon,
+.graphImg :global(.topo-hl-node) > ellipse,
+.graphImg :global(.topo-hl-node) > polygon {
+  stroke: var(--dsw-alias-state-business-primary, #4176e6);
+  stroke-opacity: 1;
+  stroke-width: 2.2;
+}
+
+/* Far ends of the lit edges stay legible but secondary. */
+.graphImg :global(.topo-hl-neighbor) > ellipse,
+.graphImg :global(.topo-hl-neighbor) > polygon {
+  stroke: var(--dsw-alias-state-business-primary, #4176e6);
+  stroke-opacity: 0.45;
+  stroke-width: 1.4;
+}
+
+/* Lit edges: brand stroke on the curve, brand arrowhead, brand label. */
+.graphImg :global(.topo-hl-edge) path {
+  fill: none;
+  stroke: var(--dsw-alias-state-business-primary, #4176e6);
+  stroke-opacity: 1;
+  stroke-width: 1.4;
+}
+
+.graphImg :global(.topo-hl-edge) polygon {
+  stroke: var(--dsw-alias-state-business-primary, #4176e6);
+  stroke-opacity: 1;
+  fill: var(--dsw-alias-state-business-primary, #4176e6);
+  fill-opacity: 1;
+}
+
+.graphImg :global(.topo-hl-edge) text {
+  fill: var(--dsw-alias-state-business-primary, #4176e6);
+  fill-opacity: 1;
+}
+
+/* Everything outside the lit neighborhood recedes instead of turning gray. */
+.graphImg :global(.topo-dimmed) {
+  opacity: 0.12;
+}
+
+/* One shared transition so hover, selection, and highlight changes do not pop. */
+.graphImg :global(.topo-hover-node),
+.graphImg :global(.topo-selected-node),
+.graphImg :global(.topo-hl-node),
+.graphImg :global(.topo-hl-neighbor),
+.graphImg :global(.topo-hl-edge),
+.graphImg :global(.topo-dimmed) {
+  transition-property: opacity, stroke, stroke-opacity, stroke-width, fill, fill-opacity;
+  transition-duration: 0.12s;
+  transition-timing-function: ease;
+}
+
+/* ── Zoom controls ── */
 
 /* Compact floating pill: fit / zoom-out / zoom-level / zoom-in. */
 .zoomControls {
@@ -38,9 +108,9 @@
   align-items: center;
   gap: 2px;
   padding: 4px;
-  border: 1px solid var(--dsw-border, #cbd5e1);
+  border: 1px solid var(--dsw-alias-border-l2, #0000001a);
   border-radius: 8px;
-  background: var(--dsw-surface, #ffffff);
+  background: var(--dsw-alias-bg-layer-2, #ffffff);
   box-shadow: 0 6px 16px rgb(0 0 0 / 0.08);
 }
 
@@ -58,7 +128,7 @@
 
 .zoomControls button:hover {
   color: var(--dsw-text-primary, #0f172a);
-  border-color: var(--dsw-border, #cbd5e1);
+  border-color: var(--dsw-alias-border-l2, #0000001a);
 }
 
 .zoomControls .iconButton {

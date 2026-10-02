@@ -4,6 +4,39 @@ import { IconFullscreenOutline16, IconMinusOutline16, IconPlusOutline16 } from '
 import type { TopologyTransform } from './stores.ts'
 import css from './TopologyGraphView.module.css'
 
+/** Dependency direction highlighted from the selected node. */
+export type HighlightDirection = 'out' | 'in'
+
+/** A node resolved from the composed SVG DOM. */
+export interface GraphNodeRef {
+  /** Stable element id (`node-p:3` / `iso-node-m:0`), unique across the composed SVG. */
+  readonly key: string
+  /** DOT node id from the `<title>` text (`p:3` / `m:0`), used to match edge endpoints. */
+  readonly dotId: string
+  /** Display label (`ApprovalService [60,96]`). */
+  readonly label: string
+}
+
+/** Data passed when a graph node is tapped. */
+export interface NodeClickInfo {
+  /** Stable element id, echoed back as the selection key. */
+  readonly key: string
+  /** DOT node id (`p:3` / `m:0`). */
+  readonly nodeId: string
+  /** Display label as rendered, including the instance ordinals. */
+  readonly label: string
+  /**
+   * Tap point in graph coordinates. Anchoring here rather than in viewport px
+   * keeps the popover attached to its node across pan and zoom.
+   */
+  readonly anchorX: number
+  readonly anchorY: number
+  /** Outgoing direct dependencies (deg⁺) as drawn in the current projection. */
+  readonly outCount: number
+  /** Incoming direct dependents (deg⁻) as drawn in the current projection. */
+  readonly inCount: number
+}
+
 /** Zoom/pan props plus the localized control labels and the shared transform. */
 export interface TopologyGraphViewProps {
   svg: string
@@ -20,6 +53,223 @@ export interface TopologyGraphViewProps {
   resetViewLabel: string
   /** Accessible name for the clickable zoom-level toggle. */
   zoomLevelLabel: string
+  /** Called when a graph node is tapped; receives id, label, counts, and viewport coords. */
+  onNodeClick?: (info: NodeClickInfo) => void
+  /** Called when empty space is tapped (to close the popover and drop the highlight). */
+  onEmptyClick?: () => void
+  /** Element id of the selected node, or null when nothing is selected. */
+  selectedKey?: string | null
+  /** DOT id of the selected node, used to match edge endpoints. */
+  selectedDotId?: string | null
+  /** Active dependency direction to highlight; null means selection only. */
+  direction?: HighlightDirection | null
+}
+
+/**
+ * Classes owned and toggled by the highlight layer. The hover ring is managed
+ * separately by the pointer listener so a selection repaint cannot drop it.
+ */
+const HIGHLIGHT_CLASSES = [
+  'topo-selected-node',
+  'topo-hl-node',
+  'topo-hl-neighbor',
+  'topo-hl-edge',
+  'topo-dimmed',
+] as const
+
+/** Read the DOT node id and display label from a Graphviz node group. */
+function nodeRefFromElement(element: EventTarget | null): { ref: GraphNodeRef; group: Element } | null {
+  if (!(element instanceof Element)) return null
+  const group = element.closest('g.node')
+  if (group === null) return null
+  const dotId = group.querySelector(':scope > title')?.textContent
+  if (dotId === null || dotId === undefined) return null
+  const label = group.querySelector(':scope > text')?.textContent ?? dotId
+  return { ref: { key: group.id, dotId, label }, group }
+}
+
+/**
+ * The nearest ancestor `<g>` that wraps one whole Graphviz layout (main or
+ * isolated). `composeGraphvizSvgs` places each layout in its own translated
+ * group, so this is also the isolation boundary: `m:N` ids are only unique
+ * inside one layout and must not be matched across both.
+ */
+function graphScope(node: Element): Element {
+  let current: Element = node
+  while (current.parentElement !== null && current.parentElement.tagName.toLowerCase() !== 'svg') {
+    current = current.parentElement
+  }
+  return current
+}
+
+/** Split a Graphviz edge `<title>` (`source-&gt;target`) into its endpoints. */
+function edgeEndpoints(edge: Element): { source: string; target: string } | null {
+  const title = edge.querySelector(':scope > title')?.textContent
+  if (title === null || title === undefined) return null
+  const arrowIdx = title.indexOf('->')
+  if (arrowIdx < 0) return null
+  return { source: title.slice(0, arrowIdx), target: title.slice(arrowIdx + 2) }
+}
+
+/** Count the drawn outgoing/incoming edges of a node inside one layout scope. */
+function edgeStats(scope: Element, dotId: string): { out: number; in: number } {
+  let out = 0
+  let incoming = 0
+  for (const edge of scope.querySelectorAll('g.edge')) {
+    const endpoints = edgeEndpoints(edge)
+    if (endpoints === null) continue
+    if (endpoints.source === dotId) out += 1
+    if (endpoints.target === dotId) incoming += 1
+  }
+  return { out, in: incoming }
+}
+
+/** Find the node group with the given stable element id. */
+function findNodeGroup(container: Element, key: string): Element | null {
+  for (const group of container.querySelectorAll('g.node')) {
+    if (group.id === key) return group
+  }
+  return null
+}
+
+/** Drop every highlight class this module owns. */
+function clearHighlight(container: Element): void {
+  const selector = HIGHLIGHT_CLASSES.map(name => `.${name}`).join(',')
+  for (const element of container.querySelectorAll(selector)) {
+    element.classList.remove(...HIGHLIGHT_CLASSES)
+  }
+}
+
+/**
+ * Paint the selection: the selected node always gets a marker ring; when a
+ * direction is active, only that direction's edges and their far-end nodes stay
+ * lit while the rest of the same layout dims. The other layout (isolated
+ * plugins) is left untouched, since it has no edges to follow.
+ */
+function applyHighlight(
+  container: HTMLElement,
+  selection: { key: string; dotId: string; direction: HighlightDirection | null } | null,
+): void {
+  clearHighlight(container)
+  if (selection === null) return
+  const group = findNodeGroup(container, selection.key)
+  if (group === null) return
+  group.classList.add('topo-selected-node')
+  if (selection.direction === null) return
+
+  const scope = graphScope(group)
+  const lit = new Set<string>([selection.dotId])
+  const connectedEdges = new Set<Element>()
+
+  for (const edge of scope.querySelectorAll('g.edge')) {
+    const endpoints = edgeEndpoints(edge)
+    if (endpoints === null) continue
+    const matches = selection.direction === 'out'
+      ? endpoints.source === selection.dotId
+      : endpoints.target === selection.dotId
+    if (!matches) continue
+    connectedEdges.add(edge)
+    lit.add(endpoints.source)
+    lit.add(endpoints.target)
+  }
+
+  group.classList.add('topo-hl-node')
+
+  for (const node of scope.querySelectorAll('g.node')) {
+    if (node === group) continue
+    const dotId = node.querySelector(':scope > title')?.textContent
+    if (dotId !== null && dotId !== undefined && lit.has(dotId)) {
+      node.classList.add('topo-hl-neighbor')
+    } else {
+      node.classList.add('topo-dimmed')
+    }
+  }
+
+  for (const edge of scope.querySelectorAll('g.edge')) {
+    edge.classList.add(connectedEdges.has(edge) ? 'topo-hl-edge' : 'topo-dimmed')
+  }
+}
+
+/**
+ * Inline SVG renderer. Encapsulates the raw HTML injection behind a meaningful
+ * component name so readers are not startled by the React API at call sites.
+ * Hover and highlight are applied as classes on the Graphviz DOM, which React
+ * does not own; the exported SVG string itself stays free of listeners.
+ */
+function SvgCanvas({ svg, alt, fitted, view, selectedKey, selectedDotId, direction }: {
+  svg: string
+  alt: string
+  fitted: boolean
+  view: TopologyTransform
+  selectedKey: string | null
+  selectedDotId: string | null
+  direction: HighlightDirection | null
+}): ReactNode {
+  const containerRef = useRef<HTMLDivElement>(null)
+  /** The group currently carrying the hover ring, to avoid redundant DOM work. */
+  const hoveredRef = useRef<Element | null>(null)
+
+  // Repaint the persistent selection after each render or when it changes.
+  useEffect(() => {
+    const container = containerRef.current
+    if (container === null) return
+    applyHighlight(
+      container,
+      selectedKey !== null && selectedDotId !== null
+        ? { key: selectedKey, dotId: selectedDotId, direction }
+        : null,
+    )
+  }, [selectedKey, selectedDotId, direction, svg])
+
+  // A light hover ring only: no dimming, so sweeping the pointer across the
+  // graph does not flash the whole canvas between focus states.
+  useEffect(() => {
+    const container = containerRef.current
+    if (container === null) return
+    // A new SVG string replaces the Graphviz DOM, so any tracked group is stale.
+    hoveredRef.current = null
+
+    const onMouseOver = (event: MouseEvent): void => {
+      const found = nodeRefFromElement(event.target)
+      if (found === null || found.group === hoveredRef.current) return
+      hoveredRef.current?.classList.remove('topo-hover-node')
+      hoveredRef.current = found.group
+      found.group.classList.add('topo-hover-node')
+      container.style.cursor = 'pointer'
+    }
+
+    const onMouseOut = (event: MouseEvent): void => {
+      const hovered = hoveredRef.current
+      if (hovered === null) return
+      const related = event.relatedTarget
+      if (related !== null && hovered.contains(related as Node)) return
+      hovered.classList.remove('topo-hover-node')
+      hoveredRef.current = null
+      container.style.cursor = ''
+    }
+
+    container.addEventListener('mouseover', onMouseOver)
+    container.addEventListener('mouseout', onMouseOut)
+    return () => {
+      container.removeEventListener('mouseover', onMouseOver)
+      container.removeEventListener('mouseout', onMouseOut)
+    }
+  }, [svg])
+
+  return (
+    <div
+      ref={containerRef}
+      className={css.graphImg}
+      role="img"
+      aria-label={alt}
+      style={{
+        opacity: fitted ? 1 : 0,
+        transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})`,
+      }}
+      // eslint-disable-next-line react/no-danger -- SVG is generated by our own server-side Graphviz renderer; trusted source.
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  )
 }
 
 const MIN_K = 0.05
@@ -52,18 +302,22 @@ function fitView(containerWidth: number, containerHeight: number, naturalWidth: 
 type Size = { readonly width: number; readonly height: number }
 
 /**
- * Pan/zoom SVG viewer: fit-and-center on load, wheel zooms toward the cursor,
- * drag pans, double-click zooms toward the cursor, and a compact floating pill
- * (fit / zoom-out / zoom-level / zoom-in) collapses to just the fit control at
- * rest. The transform is written back to the parent store on every change so it
- * survives panel close/reopen.
+ * Pan/zoom SVG viewer with drill-down interaction. Fit-and-center on load,
+ * wheel zooms toward the cursor, drag pans, double-click zooms toward the
+ * cursor, and a compact floating pill (fit / zoom-out / zoom-level / zoom-in)
+ * collapses to just the fit control at rest.
+ *
+ * Hovering a node raises a ring; tapping it fires onNodeClick with viewport
+ * coordinates and the drawn deg⁺/deg⁻ counts. Tapping empty space fires
+ * onEmptyClick. `direction` lights only the chosen dependency direction.
  */
 export function TopologyGraphView({
   svg, alt, height, transform, onTransformChange, zoomInLabel, zoomOutLabel, resetViewLabel, zoomLevelLabel,
+  onNodeClick, onEmptyClick, selectedKey, selectedDotId, direction,
 }: TopologyGraphViewProps): ReactNode {
   const containerRef = useRef<HTMLDivElement>(null)
   const naturalRef = useRef<Size | null>(null)
-  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; baseX: number; baseY: number } | null>(null)
+  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; baseX: number; baseY: number; moved: boolean } | null>(null)
   const [view, setView] = useState<TopologyTransform>(() => transform ?? { x: 0, y: 0, k: 1 })
   const [fitted, setFitted] = useState(transform !== null)
   const [containerSize, setContainerSize] = useState<Size | null>(null)
@@ -121,16 +375,19 @@ export function TopologyGraphView({
     setAtFit(false)
   }, [onTransformChange])
 
-  const onLoad = (event: React.SyntheticEvent<HTMLImageElement>): void => {
-    const img = event.currentTarget
-    naturalRef.current = { width: img.naturalWidth, height: img.naturalHeight }
-    if (transform === null) fit()
-    setFitted(true)
-  }
+  // Extract natural dimensions from the SVG viewBox on first render.
+  useEffect(() => {
+    const match = svg.match(/viewBox="[\d.]+ [\d.]+ ([\d.]+) ([\d.]+)"/)
+    if (match !== null) {
+      naturalRef.current = { width: parseFloat(match[1] ?? '0'), height: parseFloat(match[2] ?? '0') }
+      if (transform === null) {
+        requestAnimationFrame(() => { fit() })
+      }
+      setFitted(true)
+    }
+  }, [svg, transform, fit])
 
   // Track the container size so the zoom-level "actual size" (100%) stays centered.
-  // ResizeObserver is unavailable in jsdom; the initial size already comes from
-  // getBoundingClientRect, so the center just won't react to resizes there.
   useEffect(() => {
     const element = containerRef.current
     if (element === null) return
@@ -168,8 +425,7 @@ export function TopologyGraphView({
     return () => { element.removeEventListener('wheel', onWheel) }
   }, [onTransformChange])
 
-  // Keyboard shortcuts while the pointer is over the canvas: +/− zoom, 0/F reset-to-fit,
-  // arrow keys pan. Ignored while a text field has focus.
+  // Keyboard shortcuts while the pointer is over the canvas.
   useEffect(() => {
     if (!viewportHovered) return
     const onKey = (event: KeyboardEvent): void => {
@@ -199,6 +455,7 @@ export function TopologyGraphView({
       startY: event.clientY,
       baseX: view.x,
       baseY: view.y,
+      moved: false,
     }
     event.currentTarget.setPointerCapture(event.pointerId)
   }
@@ -206,16 +463,45 @@ export function TopologyGraphView({
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>): void => {
     const drag = dragRef.current
     if (drag === null || drag.pointerId !== event.pointerId) return
+    const dx = event.clientX - drag.startX
+    const dy = event.clientY - drag.startY
+    if (!drag.moved && Math.abs(dx) < 3 && Math.abs(dy) < 3) return
+    drag.moved = true
     commit({
       ...view,
-      x: drag.baseX + (event.clientX - drag.startX),
-      y: drag.baseY + (event.clientY - drag.startY),
+      x: drag.baseX + dx,
+      y: drag.baseY + dy,
     })
     setAtFit(false)
   }
 
   const onPointerEnd = (event: ReactPointerEvent<HTMLDivElement>): void => {
-    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null
+    const drag = dragRef.current
+    if (drag === null || drag.pointerId !== event.pointerId) return
+    // A pointer that stayed put is a tap, not a pan. setPointerCapture has
+    // retargeted the event to this container, so hit-test the real element.
+    if (!drag.moved) {
+      const realTarget = document.elementFromPoint(event.clientX, event.clientY)
+      const found = nodeRefFromElement(realTarget)
+      const container = containerRef.current
+      if (found !== null && container !== null && onNodeClick !== undefined) {
+        const rect = container.getBoundingClientRect()
+        const stats = edgeStats(graphScope(found.group), found.ref.dotId)
+        onNodeClick({
+          key: found.ref.key,
+          nodeId: found.ref.dotId,
+          label: found.ref.label,
+          // Invert the viewport transform so the anchor survives later pan/zoom.
+          anchorX: (event.clientX - rect.left - view.x) / view.k,
+          anchorY: (event.clientY - rect.top - view.y) / view.k,
+          outCount: stats.out,
+          inCount: stats.in,
+        })
+      } else if (found === null && onEmptyClick !== undefined) {
+        onEmptyClick()
+      }
+    }
+    dragRef.current = null
   }
 
   const onDoubleClick = (event: ReactPointerEvent<HTMLDivElement>): void => {
@@ -227,7 +513,6 @@ export function TopologyGraphView({
     zoomAround(px, py, event.shiftKey ? 1 / ZOOM_FACTOR : ZOOM_FACTOR)
   }
 
-  // Clicking the zoom level toggles between the reset-to-fit transform and 100% (k = 1).
   const onZoomLevelClick = (): void => {
     if (atFit) {
       const size = containerSize
@@ -246,7 +531,6 @@ export function TopologyGraphView({
   }
 
   const collapsed = atFit && !panelHovered
-  const src = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
 
   return (
     <div className={css.graphBox} style={{ height }}>
@@ -261,16 +545,14 @@ export function TopologyGraphView({
         onPointerEnter={() => { setViewportHovered(true) }}
         onPointerLeave={() => { setViewportHovered(false) }}
       >
-        <img
-          className={css.graphImg}
-          src={src}
+        <SvgCanvas
+          svg={svg}
           alt={alt}
-          draggable={false}
-          onLoad={onLoad}
-          style={{
-            opacity: fitted ? 1 : 0,
-            transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})`,
-          }}
+          fitted={fitted}
+          view={view}
+          selectedKey={selectedKey ?? null}
+          selectedDotId={selectedDotId ?? null}
+          direction={direction ?? null}
         />
       </div>
       <div

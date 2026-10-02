@@ -58,6 +58,7 @@ Only platform-module rows should appear.
 |-----------|-----------|-----------------|
 | 0.1.2-rc.1 → 0.1.5-rc.1 | Nothing | Pure dependency refresh |
 | 0.1.5-rc.3 → 0.1.7-rc.2 | `TypertCodec.schema` → `create: () => TypertSchema` factory | Wrapped zod schemas in `create: () => schema` in both `src/client/remote-client.ts` and `src/typert.ts` |
+| 0.1.7-rc.2 → 0.2.0-rc.2 | Nothing | Pure dependency refresh, despite the minor-version jump |
 
 Add entries as they occur. Patterns emerge over time; premature generalization
 does not.

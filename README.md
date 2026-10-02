@@ -67,6 +67,26 @@ centered window. Same-named plugin instances merge into one node; each node's
 label carries the instance creation ordinals in brackets (`timer [1,9,23]`),
 assigned at startup and meaningful only within that run.
 
+### Node inspection
+
+The SVG renders inline, so the graph is interactive without baking anything
+into the export — a downloaded SVG still opens clean in any viewer.
+
+- **Hover** raises a light ring on the node, nothing else.
+- **Click** opens a card anchored to that node (it tracks the node through pan
+  and zoom). The card shows only what needs a running process to know: the
+  fiber `state`, the module `source`, and the drawn in/out degree. The name
+  links to the npm page for everything that does not (version, description,
+  license, repository).
+- **`deg⁺` / `deg⁻`** are pill toggles for the graph-theory out-/in-degree as
+  drawn in the collapsed projection. Tapping one lights exactly that
+  direction's dependency edges and their far ends while the rest fades; tapping
+  it again clears. They are disabled at zero.
+
+Degree counts are read from the rendered SVG rather than the raw snapshot, so a
+merged node reports the edges actually drawn after the projection collapses
+same-named instances.
+
 The client injects `remote` (the gateway ClientRemote service) and self-mounts
 its own `pluginTopology` Remote contribution, so it does not require editing
 the host assembly's contribution list.
@@ -79,7 +99,7 @@ version on their own schedule, independent of which DSH release it targets.
 The table below maps each plugin version to the DSH release it was validated
 against, so pick the plugin version whose target DSH matches your harness.
 
-Current release targets DeepSeek Harness `0.1.7-rc.2`; the `peerDependencies`
+Current release targets DeepSeek Harness `0.2.0-rc.2`; the `peerDependencies`
 pin the client packages and `@deepseek-ai/cordis@^4.0.4` the snapshot reads
 through. The 0.1.2 rc line removed the old `dsh-client-runtime` browser runtime:
 the client now runs on the Cordis `Context` augmented by the shell baseline
@@ -101,6 +121,7 @@ releases only and skips the fast-moving `alpha` line.
 | `0.3.0` | `0.1.5-rc.1` | Dependency refresh for DSH 0.1.5-rc.1; no code changes required. |
 | `0.3.1` | `0.1.5-rc.3` | Peer refresh to DSH 0.1.5-rc.3 (same 0.1.5 rc line). |
 | `0.4.0` | `0.1.7-rc.2` | TypertCodec API migration (`schema` → `create`); cordis ^4.0.4. |
+| `0.5.0` | `0.2.0-rc.2` | Node detail popover + direction-scoped dependency highlight; peer refresh to DSH 0.2.0-rc.2 (no code changes required). |
 
 ## Known Limitations
 
@@ -121,8 +142,8 @@ pnpm run typecheck  # noEmit check
 ```
 
 The `dsh.client` browser bundle inlines everything except the shell's frozen
-platform-module rows (`react`, `@deepseek-ai/cordis`, `dsh-client-store`, and
-`dsh-client-ui-slots`), which every 0.1.2-rc.1 harness shell serves.
+platform-module rows (`react`, `react/jsx-runtime`, and
+`@deepseek-ai/dsh-client-store`), which every supported harness shell serves.
 
 See [NEXT-STEPS.md](NEXT-STEPS.md) for planned renderer improvements.
 
@@ -147,8 +168,8 @@ store avoids the npm cache entirely:
 pnpm publish                    # same prepublishOnly gate, pnpm store
 ```
 
-`files` ships `lib/`, `cordis.patch.yml`, and `overlay.example.yml`; npm adds
-README and LICENSE automatically.
+`files` ships `lib/`, `cordis.patch.yml`, `overlay.example.yml`, and
+`NEXT-STEPS.md`; npm adds README and LICENSE automatically.
 
 ## License
 
