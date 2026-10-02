@@ -37,6 +37,12 @@ because the upstream had a large jump or because the adaptation was difficult.
 Pick a new plugin version using plain semver (e.g. `0.2.0`), and the DSH rc you
 adapt to (e.g. `0.1.2-rc.1`). The two are independent.
 
+**Order matters: nothing gets tagged until the pre-release review is complete
+and the user has confirmed the smoke test.** A tag is the canonical reference
+for a published artifact, so a tag cut too early cannot be quietly corrected —
+0.5.0 was tagged while its work was still settling and the tag had to be
+deleted.
+
 ```sh
 # 1. Bump package.json:
 #    - "version": the new plugin semver (independent of DSH).
@@ -51,23 +57,45 @@ pnpm build
 pnpm test
 
 # 3. Verify the client bundle's external requires are only platform-module
-#    rows (react, @deepseek-ai/cordis, dsh-client-store, dsh-client-ui-slots).
+#    rows.
 grep -oE 'require\("[^"]+"\)' lib/client.js | sort -u
 
-# 4. Update the Compatibility table in README.md, then commit + tag.
+# 4. Update the Compatibility table in README.md — it renders on the npm
+#    package page, so it is this release's public face.
+
+# 5. Run the pre-release review below. Every gate, and report the results.
+
+# 6. Smoke-test in a web profile, and WAIT for the user's confirmation. The
+#    pt-test profile links this checkout via a symlink, so rebuilds show up:
+dsh --profile pt-test --no-open --port 0    # open the printed token URL
+
+# 7. Only once 1–6 are done and reported: commit, tag, push.
 git add -A
 git commit -m "chore: release <version> (targets dsh <rc>)"
 git tag -a v<version> -m "dsh-plugin-topology v<version> — targets dsh <rc>"
 git push origin main
 git push origin v<version>
-
-# 5. Smoke-test headlessly (node half), then verify the browser panel in a web
-#    profile before publishing. The pt-test profile links this checkout via a
-#    symlink, so rebuilds show up immediately:
-dsh --profile pt-test --no-open --port 0    # open the printed token URL
 ```
 
-### 6. Publish — RUN BY HAND (OTP)
+## Pre-release review — required before tagging
+
+The full checklist and its commands live in [`../AGENTS.md`](../AGENTS.md),
+which DeepSeek Harness injects into every agent session. In short:
+
+1. **Scope** — review the diff since the last tag, not just the last commit.
+2. **Version** — correct semver level, and not already on the registry.
+3. **Packaging** — inspect what actually ships (`pnpm pack --dry-run`) and
+   confirm there is no orphaned `lib/` output for a deleted source. `lib/` is
+   gitignored, so git cannot show you this; 0.5.0 shipped a dead
+   `NodeDetailPanel.js` for exactly that reason.
+4. **User-facing docs** — re-read the new compatibility row *as a reader*: is
+   every claim unambiguous, and is each one true of this release?
+5. **Gates** — install / typecheck / build / test, plus bundle externals.
+6. **Smoke test** — user-confirmed.
+
+Report what was actually checked. "All good" is not a review.
+
+### 7. Publish — RUN BY HAND (OTP)
 
 ```sh
 ./scripts/publish.sh
