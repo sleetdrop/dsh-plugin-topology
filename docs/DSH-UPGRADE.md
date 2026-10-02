@@ -28,6 +28,17 @@ types change.
 APIs. These breakages produce no type errors — only wrong data at runtime.
 After any cordis bump, verify snapshot output even if the build passes clean.
 
+**Theme tokens are silent risks too**: the panel styles itself against DSH
+design tokens, and a token that does not exist just resolves to whatever
+fallback the declaration carries — no error, no warning, no type check. Names
+are easy to guess wrong; `--dsw-surface`, `--dsw-text-primary` and
+`--dsw-border` do not exist, while the real families are
+`--dsw-alias-bg-layer-1/2/3`, `--dsw-alias-label-primary/secondary/tertiary`,
+and `--dsw-alias-border-l1..l4`. When touching any `src/client/*.css`, audit
+every `var(--dsw-*)` against what the installed `dsh-client-ui-theme` actually
+declares (its bundle also contains a `name: "--dsw-…"` token list). Check both
+themes: a stale light fallback only shows up in dark, and vice versa.
+
 ## Compatibility Tracking
 
 Three places must stay in sync after every upgrade:
