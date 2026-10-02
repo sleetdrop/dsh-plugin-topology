@@ -54,13 +54,13 @@
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: var(--dsw-text-secondary, #64748b);
+  color: var(--dsw-alias-label-secondary, #61666b);
   cursor: pointer;
 }
 
 .closeButton:hover {
   background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-  color: var(--dsw-text-primary, #0f172a);
+  color: var(--dsw-alias-label-primary, #0f1115);
 }
 
 .metaRow {
@@ -80,18 +80,18 @@
 }
 
 .stateActive {
-  background: color-mix(in srgb, var(--dsw-static-deepseek-50, #edf3fe) 60%, transparent);
+  background: var(--dsw-alias-state-business-tertiary, #e4edfd);
   color: var(--dsw-alias-state-business-primary, #4176e6);
 }
 
 .stateFailed {
-  background: color-mix(in srgb, var(--dsw-static-red-50, #fef2f2) 60%, transparent);
+  background: var(--dsw-alias-interactive-bg-hover-danger, #ec13130d);
   color: var(--dsw-alias-state-error-primary, #ec1313);
 }
 
 .stateOther {
   background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-  color: var(--dsw-text-secondary, #64748b);
+  color: var(--dsw-alias-label-secondary, #61666b);
 }
 
 .row {
@@ -102,13 +102,13 @@
 
 .rowLabel {
   font-size: 11px;
-  color: var(--dsw-text-secondary, #64748b);
+  color: var(--dsw-alias-label-secondary, #61666b);
   white-space: nowrap;
 }
 
 .rowValue {
   font-size: 11px;
-  color: var(--dsw-text-primary, #0f172a);
+  color: var(--dsw-alias-label-primary, #0f1115);
   word-break: break-all;
 }
 
@@ -132,7 +132,7 @@
   border: 1px solid var(--dsw-alias-border-l2, #0000001a);
   border-radius: 999px;
   background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-  color: var(--dsw-text-secondary, #64748b);
+  color: var(--dsw-alias-label-secondary, #61666b);
   cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
@@ -172,6 +172,6 @@
   border-radius: 3px;
   font-size: 10px;
   font-weight: 500;
-  background: color-mix(in srgb, var(--dsw-static-red-50, #fef2f2) 60%, transparent);
+  background: var(--dsw-alias-interactive-bg-hover-danger, #ec13130d);
   color: var(--dsw-alias-state-error-primary, #ec1313);
 }

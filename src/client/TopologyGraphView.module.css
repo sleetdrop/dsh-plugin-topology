@@ -122,12 +122,12 @@
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
-  color: var(--dsw-text-secondary, #64748b);
+  color: var(--dsw-alias-label-secondary, #61666b);
   cursor: pointer;
 }
 
 .zoomControls button:hover {
-  color: var(--dsw-text-primary, #0f172a);
+  color: var(--dsw-alias-label-primary, #0f1115);
   border-color: var(--dsw-alias-border-l2, #0000001a);
 }
 
@@ -148,12 +148,12 @@
   font-size: 11px;
   line-height: 1;
   text-align: center;
-  color: var(--dsw-text-secondary, #64748b);
+  color: var(--dsw-alias-label-secondary, #61666b);
   transition: opacity 0.15s ease, width 0.15s ease;
 }
 
 .zoomLevel:hover {
-  color: var(--dsw-text-primary, #0f172a);
+  color: var(--dsw-alias-label-primary, #0f1115);
 }
 
 .zoomControls.collapsed .zoomButton,
