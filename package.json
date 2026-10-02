@@ -70,7 +70,8 @@
     }
   },
   "scripts": {
-    "build": "tsc && tsdown",
+    "clean": "node -e \"require('node:fs').rmSync('lib',{recursive:true,force:true})\"",
+    "build": "pnpm run clean && tsc && tsdown",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsc -p tsconfig.test.json && node --test 'lib-test/test/*.test.js'",
     "prepare": "pnpm run build",
