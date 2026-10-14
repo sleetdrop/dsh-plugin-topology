@@ -110,8 +110,10 @@ renderer (`dsh-client-ui-renderer` → `ctx.slots`), `dsh-client-store`
 — verify the installed harness satisfies the peer ranges before enabling the
 tool or panel.
 
-DSH itself has no beta channel — it publishes `alpha` then `rc` (its `latest`
-dist-tag is stale, follow its `next`). This plugin adapts to stable DSH `rc`
+DSH itself has no beta channel — it publishes `alpha` then `rc`. Follow its
+`next` dist-tag: `latest` is not a dependable pointer across the suite, because
+the individual `@deepseek-ai/dsh-*` packages leave it on an older prerelease
+rather than moving it with `next`. This plugin adapts to stable DSH `rc`
 releases only and skips the fast-moving `alpha` line.
 
 | Plugin version (Git + npm) | Targets DSH harness | Notes |
