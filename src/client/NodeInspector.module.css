@@ -688,19 +688,14 @@
 
 .timelineBand {
   position: relative;
+  box-sizing: border-box;
   height: 18px;
   overflow: hidden;
+  border: 1px solid var(--dsw-alias-border-l2, #0000001a);
   border-radius: 3px;
-  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-}
-
-.timelineSelectedSpan {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 1;
-  background: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 12%, transparent);
-  pointer-events: none;
+  /* A chart surface, not the row hover fill: the band must not share the
+     neighbour-row gray. The density gradient is painted on top. */
+  background: var(--dsw-alias-bg-layer-1, #ffffff);
 }
 
 .timelineHit {

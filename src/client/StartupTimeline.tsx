@@ -92,9 +92,6 @@ export function StartupTimeline({ timeline, mode, onSelectPlugin, t }: StartupTi
 
   const bins = buildBins(timeline)
   const selectedOrdinals = [...new Set(timeline.selected.map(item => item.ordinal))].sort((a, b) => a - b)
-  const selectedFirst = selectedOrdinals[0]
-  const selectedLast = selectedOrdinals[selectedOrdinals.length - 1]
-  const hasSpan = selectedOrdinals.length > 1 && selectedFirst !== selectedLast
   const upMarks = mode === 'node' ? timeline.dependencies : timeline.service?.providers ?? []
   const downMarks = mode === 'node' ? timeline.dependents : timeline.service?.consumers ?? []
   const hasLate = timeline.lateProviders.length > 0
@@ -162,16 +159,6 @@ export function StartupTimeline({ timeline, mode, onSelectPlugin, t }: StartupTi
         className={css.timelineBand}
         style={{ backgroundImage: densityGradient(bins) }}
       >
-        {hasSpan ? (
-          <span
-            className={css.timelineSelectedSpan}
-            style={{
-              left: `${percent(selectedFirst, timeline.min, timeline.max)}%`,
-              width: `${percent(selectedLast, timeline.min, timeline.max) - percent(selectedFirst, timeline.min, timeline.max)}%`,
-            }}
-            aria-hidden="true"
-          />
-        ) : null}
         {upMarks.map(item => hit(item, false))}
         {downMarks.map(item => hit(item, true))}
         {selectedOrdinals.map(ordinal => (
