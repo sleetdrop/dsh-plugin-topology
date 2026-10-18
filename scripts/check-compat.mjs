@@ -44,11 +44,19 @@ if (releaseRow.dsh !== latest.dsh) {
   process.exit(1)
 }
 
+// Packages that legitimately did not publish in the new rc line. Keep this
+// explicit: an exception here is a reviewed compatibility decision, not a
+// blanket "allow any range".
+const DSH_PEER_EXCEPTIONS = {
+  '@deepseek-ai/dsh-invariants': '^0.2.0-rc.2',
+}
+
 const dshPeers = Object.entries(pkg.peerDependencies ?? {})
   .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
 for (const [name, range] of dshPeers) {
-  if (range !== `^${latest.dsh}`) {
-    console.error(`check-compat: ${name} peer is ${range}, expected ^${latest.dsh}`)
+  const expected = DSH_PEER_EXCEPTIONS[name] ?? `^${latest.dsh}`
+  if (range !== expected) {
+    console.error(`check-compat: ${name} peer is ${range}, expected ${expected}`)
     process.exit(1)
   }
 }

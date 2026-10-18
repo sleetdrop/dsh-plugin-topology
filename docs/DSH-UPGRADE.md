@@ -70,6 +70,7 @@ Only platform-module rows should appear.
 | 0.1.2-rc.1 → 0.1.5-rc.1 | Nothing | Pure dependency refresh |
 | 0.1.5-rc.3 → 0.1.7-rc.2 | `TypertCodec.schema` → `create: () => TypertSchema` factory | Wrapped zod schemas in `create: () => schema` in both `src/client/remote-client.ts` and `src/typert.ts` |
 | 0.1.7-rc.2 → 0.2.0-rc.2 | Nothing | Pure dependency refresh, despite the minor-version jump |
+| 0.2.0-rc.2 → 0.2.1-rc.2 | Nothing (typecheck/build/test green) | DSH peer refresh; the installed app is 0.2.1-rc.2 (npm `latest` still 0.2.0-rc.2). `@deepseek-ai/dsh-invariants` has no 0.2.1-rc.2 release and stays 0.2.0-rc.2, recorded as an explicit `check-compat` exception. |
 
 Add entries as they occur. Patterns emerge over time; premature generalization
 does not.
