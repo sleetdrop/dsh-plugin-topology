@@ -38,9 +38,9 @@ between plugin version and validated DSH release is the compatibility table in
 GitHub branch protection is on for `main` and applies to admins: direct pushes
 are rejected, force-push and deletion are blocked, every conversation must be
 resolved, and a PR can merge only when `quality (node 22)` and
-`quality (node 24)` are green on a branch up to date with `main`. Merged
-branches are deleted automatically. Do not try `git push origin main`; expect
-it to fail.
+`quality (node 24)` are green on a branch up to date with `main`. Branches
+merged through a PR are deleted automatically. Do not try
+`git push origin main`; expect it to fail.
 
 - Start every change on a short-lived branch off `main`: `feat/…`, `fix/…`,
   `docs/…`, `chore/…`; releases use `release/vX.Y.Z`.
@@ -53,6 +53,16 @@ it to fail.
   never on `main`; never merge `main` back into a feature branch.
 - Squash-merge (`gh pr merge --squash --delete-branch`) so one PR is one
   commit on a linear `main`.
+- **Delete the branch when it merges — local and remote, every time.**
+  `--delete-branch` covers the PR branch and the local checkout, but a branch
+  merged by another path (or merged before the PR existed) is *not*
+  auto-deleted: it lingers in `git branch -a` and in the remote and can be
+  picked up as a stale base next time. Delete it explicitly
+  (`git branch -d <branch>` and `git push origin --delete <branch>`) and run
+  `git fetch --prune`. A branch whose tip is already an ancestor of
+  `origin/main` (`git merge-base --is-ancestor <branch> origin/main`) holds no
+  unique work and is always safe to delete. Before starting new work,
+  `git branch -a` should show only `main` plus its `origin/` tracking refs.
 - Tags are not branches: after the release PR merges, tag the squash-merged
   release commit and push the tag directly.
 

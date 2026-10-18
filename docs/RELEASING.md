@@ -43,6 +43,11 @@ branches are deleted automatically. The full rules agents must follow are in
 - branch off `main` (`feat/…`, `fix/…`, `docs/…`, `chore/…`; releases use
   `release/vX.Y.Z`), open a PR, wait for both checks, then
   `gh pr merge --squash --delete-branch`;
+- delete the branch after merge, local and remote. Only branches merged
+  through a PR are auto-deleted; a branch merged by another path (or merged
+  before the PR existed) has to go explicitly with `git branch -d <branch>`,
+  `git push origin --delete <branch>`, then `git fetch --prune`. A branch whose
+  tip is already an ancestor of `origin/main` holds no unique work;
 - rebase onto `origin/main` rather than merging `main` into the branch, since
   the required checks are strict;
 - tags are not branches: tag the squash-merged release commit after the PR
