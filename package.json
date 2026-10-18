@@ -117,7 +117,7 @@
     "typescript": "^5.8.0"
   },
   "dependencies": {
-    "@hpcc-js/wasm-graphviz": "^1.28.0",
+    "@hpcc-js/wasm-graphviz": "^1.29.2",
     "zod": "^4.4.3"
   },
   "publishConfig": {
