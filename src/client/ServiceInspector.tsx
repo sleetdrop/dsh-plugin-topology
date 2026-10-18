@@ -152,8 +152,8 @@ export function ServiceInspector({
           <span className={severityClass(inspection.severity)}>{severityLabel}</span>
         </div>
         <div className={css.serviceCounts}>
-          <span>{inspection.providerCount} {t('providersUnit')}</span>
-          <span>{inspection.consumerCount} {t('consumersUnit')}</span>
+          <span>{inspection.providerCount} {inspection.providerCount === 1 ? t('providerUnit') : t('providersUnit')}</span>
+          <span>{inspection.consumerCount} {inspection.consumerCount === 1 ? t('consumerUnit') : t('consumersUnit')}</span>
           <span>{t('serviceBusFactor')} {inspection.busFactor}</span>
         </div>
       </header>

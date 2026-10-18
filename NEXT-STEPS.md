@@ -3,10 +3,11 @@
 Planned directions for the plugin topology renderer. None of these are
 committed API; they are design notes for future releases.
 
-## 0.7.0 — service inspector (in progress)
+## 0.7.0 — service inspector + startup timeline
 
 Focused on the loaded-only case: service providers/consumers, bus factor,
-critical/single-provider services, and missing services per plugin. Spec:
+critical/single-provider services, missing services per plugin, and a
+continuous startup-order heat strip. Spec:
 [`0.7-service-inspector.md`](https://github.com/sleetdrop/dsh-plugin-topology/blob/main/docs/design/0.7-service-inspector.md).
 
 Graph-theory follow-ups (impact, SPOF, DAG layers, reduction, diff) are 0.7.x.
@@ -51,7 +52,7 @@ Sources and the full roadmap: [`docs/QUALITY.md`](https://github.com/sleetdrop/d
   the ordinal list doubles as a startup-order hint, and adding the count
   crowds the label.
 - Transitively affected plugins ("if I remove X, what breaks?") — now planned
-  for 0.7.x as impact/blast radius, after the 0.7.0 service inspector. The
+  for 0.7.x as impact/blast radius, after the 0.7.0 service/timeline inspector. The
   direct counts and the graph export still answer the quick case.
 
 ## Done

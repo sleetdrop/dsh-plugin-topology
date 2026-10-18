@@ -61,10 +61,10 @@ export type PluginTopologyLocaleKey =
   | 'maximize'
   | 'restore'
   | 'closePanel'
-  | 'inspectorServiceTitle'
-  | 'inspectorServiceHint'
   | 'providersTitle'
   | 'consumersTitle'
+  | 'providerUnit'
+  | 'consumerUnit'
   | 'providersUnit'
   | 'consumersUnit'
   | 'serviceInspectorTitle'
@@ -146,10 +146,10 @@ export const en: Record<PluginTopologyLocaleKey, string> = {
   maximize: 'Maximize',
   restore: 'Restore',
   closePanel: 'Close panel',
-  inspectorServiceTitle: 'Service highlight',
-  inspectorServiceHint: 'The canvas is dimmed to edges using this service. Clear the search to exit.',
   providersTitle: 'Providers',
   consumersTitle: 'Consumers',
+  providerUnit: 'provider',
+  consumerUnit: 'consumer',
   providersUnit: 'providers',
   consumersUnit: 'consumers',
   serviceInspectorTitle: 'Service inspector',
@@ -232,10 +232,10 @@ export const zh: Record<PluginTopologyLocaleKey, string> = {
   maximize: '最大化',
   restore: '还原',
   closePanel: '关闭面板',
-  inspectorServiceTitle: '服务高亮',
-  inspectorServiceHint: '画布已聚焦到使用该服务的边；清除搜索即可退出。',
   providersTitle: 'Provider',
   consumersTitle: 'Consumer',
+  providerUnit: '个 provider',
+  consumerUnit: '个 consumer',
   providersUnit: '个 provider',
   consumersUnit: '个 consumer',
   serviceInspectorTitle: '服务检查器',

@@ -92,7 +92,13 @@ into the export — a downloaded SVG still opens clean in any viewer.
 - **Off-screen chips**: up to three far endpoints are surfaced at the padded
   viewport border; clicking one selects it.
 - **Search**: `/` focuses the toolbar search; it matches plugin names and
-  services, and selecting a service dims the canvas to edges using it.
+  services. Selecting a service opens the service inspector: providers,
+  consumers, bus factor, critical/single-provider status, and the creation
+  ordinals of both sides; clicking a row selects the plugin.
+- **Startup timeline**: a continuous creation-ordinal heat strip sits under the
+  inspector header. Neutral density is the background; charcoal hairlines mark
+  the selected instances, indigo dependencies, ochre dependents, and coral
+  late providers. Hover shows `#ordinal · plugin · state`.
 - **Unresolved rows**: the unresolved table's plugin cell locates the node and
   opens the same inspector.
 
@@ -138,7 +144,7 @@ releases only and skips the fast-moving `alpha` line.
 | `0.4.0` | `0.1.7-rc.2` | TypertCodec API migration (`schema` → `create`); cordis ^4.0.4. |
 | `0.5.0` | `0.2.0-rc.2` | Node detail popover + direction-scoped dependency highlight; panel colors rebound to the real DSH theme tokens (dark theme). The peer refresh to DSH 0.2.0-rc.2 needed no source changes of its own. |
 | `0.6.0` | `0.2.0-rc.2` | Right-side inspector (collapsible, independently scrolling dependency/dependent sections, local filter, proportional heights), breadcrumb history, off-screen chips, plugin/service search, arrow-based direction. Quality gates: CI, drift checks, locale/inspector-model tests. No DSH source changes. |
-| `0.7.0` | `0.2.1-rc.2` | Service inspector + missing services; live topology doctor (loaded-only). DSH peer refresh to 0.2.1-rc.2; quality gates unchanged. |
+| `0.7.0` | `0.2.1-rc.2` | Service inspector, missing services, startup timeline; live topology doctor (loaded-only). DSH peer refresh to 0.2.1-rc.2; quality gates unchanged. |
 
 ## Known Limitations
 
