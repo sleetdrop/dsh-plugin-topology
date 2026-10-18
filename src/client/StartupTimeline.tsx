@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { PluginNode, PluginState } from '../types.ts'
+import type { PluginNode } from '../types.ts'
 import type { StartupTimeline as TimelineData, TimelineInstance } from '../startup-timeline.ts'
 import type { PluginTopologyLocaleKey } from './locales.ts'
 import css from './NodeInspector.module.css'
@@ -11,9 +11,7 @@ export interface StartupTimelineProps {
   readonly t: (key: PluginTopologyLocaleKey) => string
 }
 
-/** Bins are visual only; the real ordinals stay on the hover/title. */
 const BIN_COUNT = 32
-const BAR_HEIGHT = 13
 
 interface Bin {
   readonly start: number
@@ -26,11 +24,6 @@ function percent(ordinal: number, min: number, max: number): number {
   return Math.max(0, Math.min(100, ((ordinal - min) / (max - min)) * 100))
 }
 
-/**
- * Turn the sparse global instances into a small density profile. A histogram
- * (rather than 300 faint ticks) shows the boot shape — front-loaded, clustered,
- * gapped — with one neutral color.
- */
 function buildBins(timeline: TimelineData): Bin[] {
   const bins: { start: number; end: number; count: number }[] = []
   const span = Math.max(1, timeline.max - timeline.min + 1)
@@ -47,6 +40,24 @@ function buildBins(timeline: TimelineData): Bin[] {
   return bins
 }
 
+/**
+ * A continuous 1D heat strip: neutral density, no bins/gaps, no symbols.
+ * Density is a soft gradient; the roles are vertical hairlines.
+ */
+function densityGradient(bins: readonly Bin[]): string {
+  const maxCount = Math.max(1, ...bins.map(bin => bin.count))
+  // One stop per bin center: the gradient interpolates between them, so the
+  // result is continuous rather than 32 hard-edged blocks.
+  const stops: string[] = []
+  for (let index = 0; index < bins.length; index += 1) {
+    const position = ((index + 0.5) / bins.length) * 100
+    const alpha = Math.round(12 + (bins[index].count / maxCount) * 38)
+    const color = `color-mix(in srgb, var(--dsw-alias-label-secondary, #61666b) ${alpha}%, transparent)`
+    stops.push(`${position.toFixed(2)}% ${color}`)
+  }
+  return `linear-gradient(90deg, ${stops.join(', ')})`
+}
+
 function titleOf(item: TimelineInstance, t: StartupTimelineProps['t']): string {
   const parts = [`#${item.ordinal}`, item.plugin.label, item.state]
   if (item.lateProvider) parts.push(t('startupLate'))
@@ -59,39 +70,48 @@ function ordinalsLabel(ordinals: readonly number[]): string {
   return `#${ordinals.slice(0, 3).join(', #')} …`
 }
 
-function upMarkClass(late: boolean): string {
-  return late
-    ? `${css.timelineMark} ${css.timelineMarkUp} ${css.timelineMarkLate}`
-    : `${css.timelineMark} ${css.timelineMarkUp}`
+function roleClass(late: boolean, down: boolean): string {
+  if (late) return `${css.timelineLine} ${css.timelineLineLate}`
+  return down ? `${css.timelineLine} ${css.timelineLineDown}` : `${css.timelineLine} ${css.timelineLineUp}`
 }
 
-const DOWN_MARK = `${css.timelineMark} ${css.timelineMarkDown}`
-
 /**
- * One integrated startup-order plot:
+ * Continuous startup-order strip:
  *
- *   ▲ dependencies / providers   (above the band)
- *   ▁▂▃▅▆▇ density of all instances, neutral
- *   ● selected instance(s)       (dark, on the band)
- *   ▼ dependents / consumers     (below the band)
+ *   key: ● selected #133   │ dependency   │ dependent   │ late   (above, not data)
+ *   ┌──────────────────────────────────────────────────────────────┐
+ *   │▒▒▒▒▒░ neutral density gradient ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│
+ *   └──────────────────────────────────────────────────────────────┘
  *
- * Color is reserved for role and exception (late), not for the whole
- * background. Selection is neutral dark on purpose: it must not read as
- * another dependency. Clicks on ▲/▼ select that plugin and fly to it.
+ * The neutral heat encodes every instance; role hairlines encode the selected
+ * node, its dependencies (blue), dependents (amber) and late providers (red).
+ * No triangles, no segmented bars, no legend below the band.
  */
 export function StartupTimeline({ timeline, mode, onSelectPlugin, t }: StartupTimelineProps): ReactNode {
   if (timeline.total === 0) return null
 
   const bins = buildBins(timeline)
-  const maxCount = Math.max(1, ...bins.map(bin => bin.count))
   const selectedOrdinals = [...new Set(timeline.selected.map(item => item.ordinal))].sort((a, b) => a - b)
   const selectedFirst = selectedOrdinals[0]
   const selectedLast = selectedOrdinals[selectedOrdinals.length - 1]
   const hasSpan = selectedOrdinals.length > 1 && selectedFirst !== selectedLast
-
   const upMarks = mode === 'node' ? timeline.dependencies : timeline.service?.providers ?? []
   const downMarks = mode === 'node' ? timeline.dependents : timeline.service?.consumers ?? []
   const hasLate = timeline.lateProviders.length > 0
+
+  const hit = (item: TimelineInstance, down: boolean): ReactNode => (
+    <button
+      key={`${down ? 'down' : 'up'}:${item.plugin.id}:${item.ordinal}`}
+      type="button"
+      className={css.timelineHit}
+      style={{ left: `${percent(item.ordinal, timeline.min, timeline.max)}%` }}
+      title={titleOf(item, t)}
+      aria-label={titleOf(item, t)}
+      onClick={() => { onSelectPlugin(item.plugin) }}
+    >
+      <span className={roleClass(item.lateProvider, down)} aria-hidden />
+    </button>
+  )
 
   return (
     <section className={css.timeline} aria-label={t('startupOrder')}>
@@ -102,94 +122,66 @@ export function StartupTimeline({ timeline, mode, onSelectPlugin, t }: StartupTi
         </span>
       </div>
 
-      <div className={css.timelinePlot}>
-        <div className={css.timelineBand}>
-          {upMarks.map(item => (
-            <button
-              key={`up:${item.plugin.id}:${item.ordinal}`}
-              type="button"
-              className={upMarkClass(item.lateProvider)}
-              style={{ left: `${percent(item.ordinal, timeline.min, timeline.max)}%` }}
-              title={titleOf(item, t)}
-              aria-label={titleOf(item, t)}
-              onClick={() => { onSelectPlugin(item.plugin) }}
-            />
-          ))}
-          <div className={css.timelineBars} aria-hidden="true">
-            {bins.map(bin => (
-              <span
-                key={bin.start}
-                className={css.timelineBar}
-                style={{ height: `${bin.count === 0 ? 0 : Math.max(1.5, (bin.count / maxCount) * BAR_HEIGHT)}px` }}
-                title={`#${bin.start}–#${bin.end} · ${bin.count}`}
-              />
-            ))}
-          </div>
-          {hasSpan ? (
-            <span
-              className={css.timelineSelectedSpan}
-              style={{
-                left: `${percent(selectedFirst, timeline.min, timeline.max)}%`,
-                width: `${percent(selectedLast, timeline.min, timeline.max) - percent(selectedFirst, timeline.min, timeline.max)}%`,
-              }}
-              aria-hidden="true"
-            />
-          ) : null}
-          {selectedOrdinals.map(ordinal => (
-            <span
-              key={`selected:${ordinal}`}
-              className={css.timelineSelectedDot}
-              style={{ left: `${percent(ordinal, timeline.min, timeline.max)}%` }}
-            />
-          ))}
-          {downMarks.map(item => (
-            <button
-              key={`down:${item.plugin.id}:${item.ordinal}`}
-              type="button"
-              className={DOWN_MARK}
-              style={{ left: `${percent(item.ordinal, timeline.min, timeline.max)}%` }}
-              title={titleOf(item, t)}
-              aria-label={titleOf(item, t)}
-              onClick={() => { onSelectPlugin(item.plugin) }}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className={css.timelineLegend}>
+      <div className={css.timelineKey}>
         {mode === 'node' ? (
           <>
-            <span className={css.timelineLegendItem}>
-              <span className={`${css.timelineSwatch} ${css.timelineSwatchSelected}`} aria-hidden />
+            <span className={css.timelineKeyItem}>
+              <span className={`${css.timelineKeySwatch} ${css.timelineKeySelected}`} aria-hidden />
               {t('startupSelected')}{selectedOrdinals.length > 0 ? ` ${ordinalsLabel(selectedOrdinals)}` : ''}
             </span>
-            <span className={css.timelineLegendItem}>
-              <span className={`${css.timelineSwatch} ${css.timelineSwatchUp}`} aria-hidden />
+            <span className={css.timelineKeyItem}>
+              <span className={`${css.timelineKeySwatch} ${css.timelineKeyUp}`} aria-hidden />
               {t('startupDependency')}
             </span>
-            <span className={css.timelineLegendItem}>
-              <span className={`${css.timelineSwatch} ${css.timelineSwatchDown}`} aria-hidden />
+            <span className={css.timelineKeyItem}>
+              <span className={`${css.timelineKeySwatch} ${css.timelineKeyDown}`} aria-hidden />
               {t('startupDependent')}
             </span>
             {hasLate ? (
-              <span className={`${css.timelineLegendItem} ${css.timelineLegendLate}`}>
-                <span className={`${css.timelineSwatch} ${css.timelineSwatchLate}`} aria-hidden />
+              <span className={`${css.timelineKeyItem} ${css.timelineKeyLate}`}>
+                <span className={`${css.timelineKeySwatch} ${css.timelineKeyLateMark}`} aria-hidden />
                 {t('startupLate')}
               </span>
             ) : null}
           </>
         ) : (
           <>
-            <span className={css.timelineLegendItem}>
-              <span className={`${css.timelineSwatch} ${css.timelineSwatchUp}`} aria-hidden />
+            <span className={css.timelineKeyItem}>
+              <span className={`${css.timelineKeySwatch} ${css.timelineKeyUp}`} aria-hidden />
               {t('providersTitle')}
             </span>
-            <span className={css.timelineLegendItem}>
-              <span className={`${css.timelineSwatch} ${css.timelineSwatchDown}`} aria-hidden />
+            <span className={css.timelineKeyItem}>
+              <span className={`${css.timelineKeySwatch} ${css.timelineKeyDown}`} aria-hidden />
               {t('consumersTitle')}
             </span>
           </>
         )}
+      </div>
+
+      <div
+        className={css.timelineBand}
+        style={{ backgroundImage: densityGradient(bins) }}
+      >
+        {hasSpan ? (
+          <span
+            className={css.timelineSelectedSpan}
+            style={{
+              left: `${percent(selectedFirst, timeline.min, timeline.max)}%`,
+              width: `${percent(selectedLast, timeline.min, timeline.max) - percent(selectedFirst, timeline.min, timeline.max)}%`,
+            }}
+            aria-hidden="true"
+          />
+        ) : null}
+        {upMarks.map(item => hit(item, false))}
+        {downMarks.map(item => hit(item, true))}
+        {selectedOrdinals.map(ordinal => (
+          <span
+            key={`selected:${ordinal}`}
+            className={css.timelineLineSelected}
+            style={{ left: `${percent(ordinal, timeline.min, timeline.max)}%` }}
+            title={`#${ordinal} · ${t('startupSelected')}`}
+          />
+        ))}
       </div>
     </section>
   )

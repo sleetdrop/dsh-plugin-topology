@@ -612,11 +612,11 @@
   color: var(--dsw-alias-label-tertiary, #94a3b8);
 }
 
-/* ── Startup timeline: one integrated plot, not two strips ── */
+/* ── Startup timeline: continuous heat strip + role hairlines ── */
 
 .timeline {
   flex: none;
-  padding: 8px 12px 7px;
+  padding: 8px 12px 8px;
   border-bottom: 1px solid var(--dsw-alias-border-l2, #0000001a);
 }
 
@@ -625,7 +625,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .timelineTitle {
@@ -641,85 +641,57 @@
   white-space: nowrap;
 }
 
-.timelinePlot {
+/* The key sits above the strip: a caption, not part of the data. */
+.timelineKey {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 10px;
+  margin-bottom: 5px;
+  color: var(--dsw-alias-label-tertiary, #94a3b8);
+  font-size: 9px;
 }
 
-.timelineMark {
-  position: absolute;
-  width: 11px;
+.timelineKeyItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.timelineKeyLate {
+  color: var(--dsw-alias-state-error-primary, #ec1313);
+}
+
+.timelineKeySwatch {
+  display: inline-block;
+  width: 2px;
   height: 8px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  transform: translateX(-50%);
+  border-radius: 1px;
 }
 
-.timelineMarkUp {
-  top: -4px;
+.timelineKeySelected {
+  width: 3px;
+  background: var(--dsw-alias-label-primary, #0f1115);
 }
 
-.timelineMarkDown {
-  bottom: -4px;
-}
-
-.timelineMark::before {
-  position: absolute;
-  top: 1px;
-  left: 50%;
-  width: 6px;
-  height: 5px;
+.timelineKeyUp {
   background: var(--dsw-alias-state-business-primary, #4176e6);
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  content: '';
-  transform: translateX(-50%);
 }
 
-.timelineMarkDown::before {
-  clip-path: polygon(0 0, 100% 0, 50% 100%);
+.timelineKeyDown {
   background: var(--dsw-alias-state-warn-primary, #d97706);
 }
 
-.timelineMarkLate::before {
+.timelineKeyLateMark {
   background: var(--dsw-alias-state-error-primary, #ec1313);
-}
-
-.timelineMark:hover::before {
-  transform: translateX(-50%) scale(1.25);
-}
-
-.timelineMark:focus-visible {
-  border-radius: 2px;
-  outline: 2px solid var(--dsw-alias-state-business-primary, #4176e6);
-  outline-offset: 0;
 }
 
 .timelineBand {
   position: relative;
-  height: 17px;
-  border-bottom: 1px solid var(--dsw-alias-border-l2, #0000001a);
-}
-
-.timelineBars {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5px;
-}
-
-.timelineBar {
-  flex: 1 1 0;
-  min-width: 0;
-  border-radius: 1px 1px 0 0;
-  background: color-mix(in srgb, var(--dsw-alias-label-tertiary, #94a3b8) 42%, transparent);
-}
-
-.timelineBar:hover {
-  background: color-mix(in srgb, var(--dsw-alias-label-secondary, #61666b) 55%, transparent);
+  height: 18px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
 }
 
 .timelineSelectedSpan {
@@ -727,71 +699,70 @@
   top: 0;
   bottom: 0;
   z-index: 1;
-  border-radius: 1px;
-  background: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 16%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 12%, transparent);
   pointer-events: none;
 }
 
-.timelineSelectedDot {
+.timelineHit {
   position: absolute;
-  top: 50%;
+  top: 0;
+  bottom: 0;
   z-index: 3;
-  width: 7px;
-  height: 7px;
-  border: 1.5px solid var(--dsw-alias-bg-layer-2, #ffffff);
-  border-radius: 50%;
-  background: var(--dsw-alias-label-primary, #0f1115);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 35%, transparent);
-  pointer-events: none;
-  transform: translate(-50%, -50%);
+  width: 9px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transform: translateX(-50%);
 }
 
-.timelineLegend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 3px 9px;
-  margin-top: 4px;
-  color: var(--dsw-alias-label-tertiary, #94a3b8);
-  font-size: 9px;
+.timelineHit:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--dsw-alias-state-business-primary, #4176e6);
+  outline-offset: -2px;
 }
 
-.timelineLegendItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
+.timelineLine {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 50%;
+  width: 2px;
+  border-radius: 1px;
+  transform: translateX(-50%);
 }
 
-.timelineLegendLate {
-  color: var(--dsw-alias-state-error-primary, #ec1313);
-}
-
-.timelineSwatch {
-  display: inline-block;
-  width: 6px;
-  height: 5px;
-}
-
-.timelineSwatchSelected {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--dsw-alias-label-primary, #0f1115);
-}
-
-.timelineSwatchUp {
+.timelineLineUp {
   background: var(--dsw-alias-state-business-primary, #4176e6);
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
-.timelineSwatchDown {
+.timelineLineDown {
   background: var(--dsw-alias-state-warn-primary, #d97706);
-  clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
-.timelineSwatchLate {
+.timelineLineLate {
+  width: 2.5px;
   background: var(--dsw-alias-state-error-primary, #ec1313);
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.timelineHit:hover .timelineLine,
+.timelineHit:focus-visible .timelineLine {
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.timelineLineSelected {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 4;
+  width: 3px;
+  border-radius: 1px;
+  background: var(--dsw-alias-label-primary, #0f1115);
+  box-shadow: 0 0 0 1px var(--dsw-alias-bg-layer-2, #ffffff);
+  pointer-events: none;
+  transform: translateX(-50%);
 }
 
 /* ── Service inspector header ── */
