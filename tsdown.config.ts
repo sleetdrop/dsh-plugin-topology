@@ -87,8 +87,11 @@ export default defineConfig({
   external: [...CLIENT_EXTERNALS],
   // tsdown auto-externalizes package dependencies; anything NOT in the loader
   // module table must inline instead. A require() the table cannot answer is a
-  // guaranteed runtime throw.
-  noExternal: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
+  // guaranteed runtime throw. (`noExternal` became `deps.alwaysBundle` in
+  // tsdown 0.23.)
+  deps: {
+    alwaysBundle: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
+  },
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
     'import.meta.env.MODE': JSON.stringify('production'),
