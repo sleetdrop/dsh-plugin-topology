@@ -51,8 +51,8 @@ function densityGradient(bins: readonly Bin[]): string {
   const stops: string[] = []
   for (let index = 0; index < bins.length; index += 1) {
     const position = ((index + 0.5) / bins.length) * 100
-    const alpha = Math.round(12 + (bins[index].count / maxCount) * 38)
-    const color = `color-mix(in srgb, var(--dsw-alias-label-secondary, #61666b) ${alpha}%, transparent)`
+    const alpha = Math.round(14 + (bins[index].count / maxCount) * 38)
+    const color = `color-mix(in srgb, var(--dsh-tl-heat, var(--dsw-alias-label-tertiary, #94a3b8)) ${alpha}%, transparent)`
     stops.push(`${position.toFixed(2)}% ${color}`)
   }
   return `linear-gradient(90deg, ${stops.join(', ')})`
@@ -115,7 +115,7 @@ export function StartupTimeline({ timeline, mode, onSelectPlugin, t }: StartupTi
       <div className={css.timelineHeader}>
         <span className={css.timelineTitle}>{t('startupOrder')}</span>
         <span className={css.timelineMeta}>
-          #{timeline.min}–#{timeline.max} · {timeline.total} {t('startupInstances')}
+          #{timeline.min} <span className={css.timelineDirection} aria-hidden>→</span> #{timeline.max}
         </span>
       </div>
 
@@ -158,6 +158,7 @@ export function StartupTimeline({ timeline, mode, onSelectPlugin, t }: StartupTi
       <div
         className={css.timelineBand}
         style={{ backgroundImage: densityGradient(bins) }}
+        title={`${timeline.total} ${t('startupInstances')}`}
       >
         {upMarks.map(item => hit(item, false))}
         {downMarks.map(item => hit(item, true))}
