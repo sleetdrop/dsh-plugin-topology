@@ -76,7 +76,7 @@ listed but not yet mined.
 | Lint/format | none | — | Biome or ESLint + Prettier (avoid a mass reformat mid-release) |
 | Drift | manual six-step review | 5 scripts + locale test, wired into `pnpm check` and CI | generated docs, changelog check |
 | Packaging | manual `pnpm pack --dry-run` | `check-pack` + release-preflight artifact | provenance/signature if the registry supports it |
-| Security | none | Dependabot (npm + Actions) | CodeQL / dependency audit |
+| Security | none | Dependabot version updates + alerts/security updates (npm + Actions; DSH version bumps manual) | CodeQL / dependency audit |
 | Evals | manual UI smoke | pure model + locale tests; host graph tests | `graph.render` contract/golden evals; scripted UI acceptance |
 | Observability | none | — | trace grading for the model tool / failure cases |
 | Docs | AGENTS, RELEASING, DSH-UPGRADE | this playbook + PR template | changelog, docs link check |
@@ -87,7 +87,10 @@ listed but not yet mined.
 - `.github/workflows/ci.yml` — `pnpm check` on Node 22 and 24.
 - `.github/workflows/release-preflight.yml` — manual; full gates + the exact
   tarball as an artifact; never tags or publishes.
-- `.github/dependabot.yml` — weekly npm + GitHub Actions updates.
+- `.github/dependabot.yml` — weekly npm + GitHub Actions updates; DSH peer
+  bumps filtered out because they move as one coordinated rc line, and
+  security updates stay enabled (the `ignore` version levels do not filter
+  them).
 - `.github/pull_request_template.md` — definition-of-done checklist and evidence.
 - `scripts/check-lib-orphans.mjs` — the 0.5.0 stale-module failure mode.
 - `scripts/check-client-externals.mjs` — the frozen loader table is a contract.

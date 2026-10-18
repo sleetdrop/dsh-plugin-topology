@@ -84,12 +84,12 @@ export default defineConfig({
   dts: false,
   sourcemap: true,
   clean: false,
-  external: [...CLIENT_EXTERNALS],
   // tsdown auto-externalizes package dependencies; anything NOT in the loader
-  // module table must inline instead. A require() the table cannot answer is a
-  // guaranteed runtime throw. (`noExternal` became `deps.alwaysBundle` in
-  // tsdown 0.23.)
+  // module table must inline instead — a require() the table cannot answer is
+  // a guaranteed runtime throw. Both options moved under `deps` in tsdown
+  // 0.23 (`external` -> `neverBundle`, `noExternal` -> `alwaysBundle`).
   deps: {
+    neverBundle: [...CLIENT_EXTERNALS],
     alwaysBundle: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
   },
   define: {
