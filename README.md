@@ -1,5 +1,7 @@
 # @sleetdrop/dsh-plugin-topology
 
+[![CI](https://github.com/sleetdrop/dsh-plugin-topology/actions/workflows/ci.yml/badge.svg)](https://github.com/sleetdrop/dsh-plugin-topology/actions/workflows/ci.yml)
+
 Plugin dependency graph inspector for DeepSeek Harness. It snapshots the live
 Cordis plugin fiber tree into a plugin/service bipartite graph, derives
 graph-theory metrics, and renders it as JSON, Graphviz DOT, or SVG.
@@ -56,6 +58,7 @@ locale dictionaries:
 
 - [Chinese (zh_CN)](docs/screenshots/panel-zh_CN.png)
 - [English (en_US)](docs/screenshots/panel-en_US.png)
+- [Right-side inspector (en_US)](docs/screenshots/inspector-en_US.png)
 
 ## Browser panel
 
@@ -73,15 +76,25 @@ The SVG renders inline, so the graph is interactive without baking anything
 into the export — a downloaded SVG still opens clean in any viewer.
 
 - **Hover** raises a light ring on the node, nothing else.
-- **Click** opens a card anchored to that node (it tracks the node through pan
-  and zoom). The card shows only what needs a running process to know: the
-  fiber `state`, the module `source`, and the drawn in/out degree. The name
-  links to the npm page for everything that does not (version, description,
-  license, repository).
-- **`deg⁺` / `deg⁻`** are pill toggles for the graph-theory out-/in-degree as
-  drawn in the collapsed projection. Tapping one lights exactly that
-  direction's dependency edges and their far ends while the rest fades; tapping
-  it again clears. They are disabled at zero.
+- **Click** selects the node and opens a fixed inspector on the right (360px,
+  collapsible to a 40px rail). It shows the fiber `state`, module `source`, and
+  two independently scrolling sections: `→ Dependencies` and `← Dependents`.
+  Each row carries a state dot, the instance ordinals, and the mediating
+  service(s); clicking a row selects and flies to that target.
+- **The inspector header** links the name to npm and carries `Frame all` per
+  direction, collapse, and close. A local filter narrows both sections by name
+  or service and shows `matching / total`; it never changes the graph
+  highlight. Section heights follow their row counts, so one direction cannot
+  push the other out of view.
+- **Breadcrumb + history**: the canvas keeps `Overview / … / current` at the top
+  left. `←`, `Backspace` or `⌘[` returns to the previous selection; the
+  breadcrumb segments are clickable.
+- **Off-screen chips**: up to three far endpoints are surfaced at the padded
+  viewport border; clicking one selects it.
+- **Search**: `/` focuses the toolbar search; it matches plugin names and
+  services, and selecting a service dims the canvas to edges using it.
+- **Unresolved rows**: the unresolved table's plugin cell locates the node and
+  opens the same inspector.
 
 Degree counts are read from the rendered SVG rather than the raw snapshot, so a
 merged node reports the edges actually drawn after the projection collapses
@@ -124,6 +137,7 @@ releases only and skips the fast-moving `alpha` line.
 | `0.3.1` | `0.1.5-rc.3` | Peer refresh to DSH 0.1.5-rc.3 (same 0.1.5 rc line). |
 | `0.4.0` | `0.1.7-rc.2` | TypertCodec API migration (`schema` → `create`); cordis ^4.0.4. |
 | `0.5.0` | `0.2.0-rc.2` | Node detail popover + direction-scoped dependency highlight; panel colors rebound to the real DSH theme tokens (dark theme). The peer refresh to DSH 0.2.0-rc.2 needed no source changes of its own. |
+| `0.6.0` | `0.2.0-rc.2` | Right-side inspector (collapsible, independently scrolling dependency/dependent sections, local filter, proportional heights), breadcrumb history, off-screen chips, plugin/service search, arrow-based direction. Quality gates: CI, drift checks, locale/inspector-model tests. No DSH source changes. |
 
 ## Known Limitations
 
@@ -138,16 +152,20 @@ releases only and skips the fast-moving `alpha` line.
 
 ```sh
 pnpm install
-pnpm run build      # tsc (node half) + tsdown (client bundle)
-pnpm test           # node:test over compiled specs
-pnpm run typecheck  # noEmit check
+pnpm check   # CI-equivalent: typecheck, build, tests, drift, pack, compat
 ```
+
+`pnpm check` includes the deterministic drift checks (orphaned `lib/`, client
+externals, DSH theme tokens, package payload, README/RELEASING/peer
+compatibility) and the locale/inspector model tests; CI runs the same matrix on
+Node 22 and 24.
 
 The `dsh.client` browser bundle inlines everything except the shell's frozen
 platform-module rows (`react`, `react/jsx-runtime`, and
 `@deepseek-ai/dsh-client-store`), which every supported harness shell serves.
 
-See [NEXT-STEPS.md](NEXT-STEPS.md) for planned renderer improvements.
+See [NEXT-STEPS.md](NEXT-STEPS.md) for planned renderer improvements and
+[docs/QUALITY.md](https://github.com/sleetdrop/dsh-plugin-topology/blob/main/docs/QUALITY.md) for the quality/drift workstream.
 
 ## Publishing
 
@@ -160,7 +178,7 @@ helper script handles the registry/login guards, publish, and verification:
 ./scripts/publish.sh   # prompts for login (if needed) and OTP
 ```
 
-`prepublishOnly` runs the build and tests. `publishConfig` pins `access:
+`prepublishOnly` runs `pnpm check` (the CI-equivalent gate). `publishConfig` pins `access:
 public` and the `registry.npmjs.org` target. If `npm publish` fails with an
 `EPERM` from the npm cache (`root-owned files`), either fix the cache once
 (`sudo chown -R $(id -u):$(id -g) ~/.npm`) or publish through pnpm, whose

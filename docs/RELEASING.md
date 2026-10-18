@@ -49,21 +49,23 @@ deleted.
 #    - peerDependencies / devDependencies: every @deepseek-ai/* client package
 #      pinned to the DSH rc you adapt to (cordis to ^4.0.x).
 
-# 2. Build + test + typecheck gate (prepublishOnly runs these too, but run
-#    them now so you publish with confidence).
+# 2. Full CI-equivalent gate (prepublishOnly runs it too, but run it now so
+#    you publish with confidence). It includes typecheck, build, tests,
+#    orphaned-lib, client externals, DSH token audit, pack payload and the
+#    README/RELEASING/peer compatibility table.
 pnpm install --frozen-lockfile
-pnpm run typecheck
-pnpm build
-pnpm test
+pnpm check
 
-# 3. Verify the client bundle's external requires are only platform-module
-#    rows.
+# 3. If you need to inspect the client externals manually (same check):
 grep -oE 'require\("[^"]+"\)' lib/client.js | sort -u
 
 # 4. Update the Compatibility table in README.md — it renders on the npm
-#    package page, so it is this release's public face.
+#    package page, so it is this release's public face. `pnpm check` fails
+#    until README, docs/RELEASING.md and the DSH peer ranges agree.
 
 # 5. Run the pre-release review below. Every gate, and report the results.
+#    `Release preflight` in GitHub Actions runs the same gates and uploads the
+#    exact tarball artifact; it never tags or publishes.
 
 # 6. Smoke-test in a web profile, and WAIT for the user's confirmation. The
 #    pt-test profile links this checkout via a symlink, so rebuilds show up:
@@ -80,7 +82,8 @@ git push origin v<version>
 ## Pre-release review — required before tagging
 
 The full checklist and its commands live in [`../AGENTS.md`](../AGENTS.md),
-which DeepSeek Harness injects into every agent session. In short:
+which DeepSeek Harness injects into every agent session. The mechanical gates
+are `pnpm check` and the manual `Release preflight` workflow. In short:
 
 1. **Scope** — review the diff since the last tag, not just the last commit.
 2. **Version** — correct semver level, and not already on the registry.
@@ -90,7 +93,8 @@ which DeepSeek Harness injects into every agent session. In short:
    `NodeDetailPanel.js` for exactly that reason.
 4. **User-facing docs** — re-read the new compatibility row *as a reader*: is
    every claim unambiguous, and is each one true of this release?
-5. **Gates** — install / typecheck / build / test, plus bundle externals.
+5. **Gates** — `pnpm check` (install / typecheck / build / test / orphaned lib /
+   client externals / DSH tokens / pack / compatibility).
 6. **Smoke test** — user-confirmed.
 
 Report what was actually checked. "All good" is not a review.
@@ -164,3 +168,4 @@ each was validated against (Git tags carry a `v` prefix, npm versions do not).
 | `0.3.1` | `0.1.5-rc.3` | peer refresh to DSH 0.1.5-rc.3 |
 | `0.4.0` | `0.1.7-rc.2` | TypertCodec API migration; cordis ^4.0.4 |
 | `0.5.0` | `0.2.0-rc.2` | node detail popover + direction-scoped highlight; dark-theme color tokens; peer refresh |
+| `0.6.0` | `0.2.0-rc.2` | Right-side inspector + breadcrumb/chips/search; quality gates (CI, drift checks, locale/inspector tests); no DSH source changes |

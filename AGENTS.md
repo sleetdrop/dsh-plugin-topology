@@ -33,6 +33,19 @@ between plugin version and validated DSH release is the compatibility table in
    untagged, and ride the next version — that is the documented policy, not a
    gap to be closed by cutting a version for every fix.
 
+## Quality gates
+
+`pnpm check` is the local equivalent of CI and must be green before reporting a
+change done: typecheck → build → test → orphaned `lib/` → client externals →
+DSH token audit → pack payload → README/RELEASING/peer compatibility. CI
+(`.github/workflows/ci.yml`) runs the same on Node 22 and 24 and is the
+authoritative gate; local green is necessary, not sufficient. Do not weaken a
+check to make a change pass — fix the drift or update the documented baseline.
+
+The phased quality/drift workstream, its sources and the definition of done
+live in [`docs/QUALITY.md`](docs/QUALITY.md). Add new industry practices there
+instead of leaving them only in a chat.
+
 ## Pre-release review
 
 Walk all six and **report what you actually checked**, before running
@@ -57,7 +70,8 @@ Walk all six and **report what you actually checked**, before running
    pnpm build
    pnpm pack --dry-run          # exact shipping payload, leaves no artifact
    ```
-   Then confirm no orphaned build output:
+   `pnpm check` runs the orphan, externals, token, pack and compatibility
+   checks automatically. To inspect by hand:
    ```sh
    for f in $(find lib -name '*.js' ! -name 'client.js' ! -name '*.map'); do
      base="${f#lib/}"; base="${base%.js}"
@@ -70,9 +84,10 @@ Walk all six and **report what you actually checked**, before running
    true of *this* release? Keep the sync points aligned: `package.json`,
    `README.md`, `docs/RELEASING.md`, and the `docs/DSH-UPGRADE.md` history table
    when upstream moved.
-5. **Gates** — `pnpm install --frozen-lockfile` → `typecheck` → `build` →
-   `test` → client-bundle externals (only `react`, `react/jsx-runtime`,
-   `@deepseek-ai/dsh-client-store`).
+5. **Gates** — `pnpm install --frozen-lockfile` → `pnpm check` (typecheck,
+   build, tests, orphaned `lib/`, client externals, DSH token audit, pack,
+   compatibility table). CI is the authoritative run; local green is
+   necessary, not sufficient.
 6. **Smoke test** — `dsh --profile pt-test --no-open --port 0`, then wait for
    the user's confirmation.
 
@@ -97,6 +112,7 @@ separately, by hand.
   `npm_config_cache="$PWD/.npm-probe" npm <cmd>`. The permanent fix is a
   one-time `sudo chown -R $(id -u):$(id -g) ~/.npm`.
 - **The panel breaks silently when a `--dsw-*` variable is misspelled.** An
-  undefined CSS variable resolves to its fallback with no error. Audit every
-  `var(--dsw-*)` in `src/client/*.css` against the tokens the installed
-  `dsh-client-ui-theme` actually declares, and check **both** themes.
+  undefined CSS variable resolves to its fallback with no error. `pnpm check`
+  audits every `var(--dsw-*)` in `src/client/*.css` against the pinned
+  `@deepseek-ai/dsh-client-ui-theme`; the theme covers both light and dark.
+  Bump that devDependency with the other DSH packages on upgrade.

@@ -1,6 +1,6 @@
 {
   "name": "@sleetdrop/dsh-plugin-topology",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Plugin dependency graph inspector for DeepSeek Harness: a host service that snapshots the live Cordis plugin fiber tree, a graph.render tool for the model, and a browser panel that renders the plugin/service topology as a zoomable graph with metrics, legend, and unresolved-dependency table.",
   "license": "MIT",
   "repository": {
@@ -74,39 +74,47 @@
     "build": "pnpm run clean && tsc && tsdown",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsc -p tsconfig.test.json && node --test 'lib-test/test/*.test.js'",
+    "check": "pnpm run typecheck && pnpm run build && pnpm run test && pnpm run check:drift",
+    "check:drift": "node scripts/check-lib-orphans.mjs && node scripts/check-client-externals.mjs && node scripts/check-css-tokens.mjs && node scripts/check-pack.mjs && node scripts/check-compat.mjs",
+    "check:lib": "node scripts/check-lib-orphans.mjs",
+    "check:externals": "node scripts/check-client-externals.mjs",
+    "check:tokens": "node scripts/check-css-tokens.mjs",
+    "check:pack": "node scripts/check-pack.mjs",
+    "check:compat": "node scripts/check-compat.mjs",
     "prepare": "pnpm run build",
-    "prepublishOnly": "pnpm build && pnpm test"
+    "prepublishOnly": "pnpm check"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-api-remotes": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-connection": "^0.2.0-rc.2",
     "@deepseek-ai/dsh-client-locale": "^0.2.0-rc.2",
     "@deepseek-ai/dsh-client-store": "^0.2.0-rc.2",
-    "@deepseek-ai/dsh-client-connection": "^0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-renderer": "^0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-sidebar": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-invariants": "^0.2.0-rc.2",
     "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
-    "@deepseek-ai/dsh-typert-protocol": "^0.2.0-rc.2",
-    "@deepseek-ai/dsh-invariants": "^0.2.0-rc.2"
+    "@deepseek-ai/dsh-typert-protocol": "^0.2.0-rc.2"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
     "@deepseek-ai/dsh-api-remotes": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-connection": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-locale": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-store": "0.2.0-rc.2",
-    "@deepseek-ai/dsh-client-connection": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-renderer": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-sidebar": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-theme": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
     "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
-    "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
-    "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
     "@types/node": "^24.0.0",
     "@types/react": "~18.3.1",
+    "lightningcss": "1.32.0",
     "react": "^18.2.0",
     "tsdown": "^0.15.0",
-    "typescript": "^5.8.0",
-    "lightningcss": "1.32.0"
+    "typescript": "^5.8.0"
   },
   "dependencies": {
     "@hpcc-js/wasm-graphviz": "^1.28.0",
@@ -118,5 +126,6 @@
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
-  }
+  },
+  "packageManager": "pnpm@12.11.2"
 }

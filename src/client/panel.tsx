@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { IconCloseOutline16, IconFullscreenOutline16, IconPluginOutline16 } from './icons.tsx'
 import { TopologyView, type TopologyViewInjected, type ViewerStateSelector } from './TopologyView.tsx'
+import type { ViewerActionBindings } from './stores.ts'
 import type { PluginTopologyLocaleKey } from './locales.ts'
 import css from './panel.module.css'
 
@@ -10,7 +11,7 @@ export type TopologyPanelProps = {
   /** Wide/rail layout flag supplied by the sidebar footer-action slot. */
   wide?: boolean
   useStore: ViewerStateSelector
-  actions: { setTransform: (transform: { x: number; y: number; k: number } | null) => void }
+  actions: ViewerActionBindings
   t: (key: PluginTopologyLocaleKey) => string
 } & TopologyViewInjected
 
@@ -22,6 +23,9 @@ export function TopologyPanel({
   const [open, setOpen] = useState(false)
   // Open maximized by default: the Graphviz canvas needs the space.
   const [maximized, setMaximized] = useState(true)
+  // While a node is selected, the first Escape belongs to the view (clear the
+  // selection); only the second one closes the panel.
+  const selectionActive = useStore(state => state.selection !== null)
 
   // Close on outside pointer; mounted only while open, so the listener
   // lifetime is the panel's.
@@ -39,15 +43,16 @@ export function TopologyPanel({
     return () => { document.removeEventListener('pointerdown', onDown) }
   }, [open])
 
-  // Escape closes the panel.
+  // Escape closes the panel unless the view still owns the key for clearing a
+  // selection. The view's own listener runs in the same bubble phase.
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape' && !selectionActive) setOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => { window.removeEventListener('keydown', onKey) }
-  }, [open])
+  }, [open, selectionActive])
 
   return (
     <div ref={rootRef} className={css.layer}>
@@ -75,13 +80,19 @@ export function TopologyPanel({
               <button
                 type="button"
                 className={css.close}
-                aria-label={t('resetView')}
-                title={t('resetView')}
+                aria-label={maximized ? t('restore') : t('maximize')}
+                title={maximized ? t('restore') : t('maximize')}
                 onClick={() => { setMaximized(value => !value) }}
               >
                 <IconFullscreenOutline16 size={14} />
               </button>
-              <button type="button" className={css.close} aria-label={t('title')} onClick={() => { setOpen(false) }}>
+              <button
+                type="button"
+                className={css.close}
+                aria-label={t('closePanel')}
+                title={t('closePanel')}
+                onClick={() => { setOpen(false) }}
+              >
                 <IconCloseOutline16 size={14} />
               </button>
             </div>

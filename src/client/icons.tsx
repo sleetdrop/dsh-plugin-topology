@@ -32,6 +32,25 @@ export function IconPlusOutline16({ size = 16, className }: IconProps): ReactNod
   )
 }
 
+/** Left arrow for history back. */
+export function IconArrowLeftOutline16({ size = 16, className }: IconProps): ReactNode {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6.53033 2.46967L1.46967 7.53033C1.17678 7.82322 1.17678 8.17678 1.46967 8.46967L6.53033 13.5303L7.59099 12.4697L3.81066 8.68934H14.5V7.31066H3.81066L7.59099 3.53033L6.53033 2.46967Z" fill="currentColor" />
+    </svg>
+  )
+}
+
+/** Magnifier glyph for the search box. */
+export function IconSearchOutline16({ size = 16, className }: IconProps): ReactNode {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="6.6" cy="6.6" r="4.3" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M9.8 9.8L14 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 /** Close cross glyph. */
 export function IconCloseOutline16({ size = 16, className }: IconProps): ReactNode {
   return (

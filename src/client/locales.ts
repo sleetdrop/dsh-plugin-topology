@@ -31,6 +31,38 @@ export type PluginTopologyLocaleKey =
   | 'popoverOutgoing'
   | 'popoverIncoming'
   | 'popoverUnresolved'
+  | 'dependencies'
+  | 'dependents'
+  | 'via'
+  | 'emptyDependencies'
+  | 'edges'
+  | 'emptyDependents'
+  | 'neighborHint'
+  | 'historyLabel'
+  | 'historyRoot'
+  | 'back'
+  | 'frameAll'
+  | 'frameReset'
+  | 'locatePlugin'
+  | 'searchPlaceholder'
+  | 'searchNoResults'
+  | 'searchPlugins'
+  | 'searchServices'
+  | 'searchResults'
+  | 'clearSearch'
+  | 'inspectorTitle'
+  | 'inspectorEmptyTitle'
+  | 'inspectorEmptyHint'
+  | 'inspectorCollapse'
+  | 'inspectorExpand'
+  | 'neighborFilter'
+  | 'neighborFilterNoMatch'
+  | 'clearFilter'
+  | 'maximize'
+  | 'restore'
+  | 'closePanel'
+  | 'inspectorServiceTitle'
+  | 'inspectorServiceHint'
 
 export const en: Record<PluginTopologyLocaleKey, string> = {
   title: 'Plugin topology',
@@ -60,9 +92,41 @@ export const en: Record<PluginTopologyLocaleKey, string> = {
   legendId: 'Instance creation ordinal within this run',
   popoverClose: 'Close',
   popoverSource: 'Source',
-  popoverOutgoing: 'Highlight outgoing dependencies (deg⁺)',
-  popoverIncoming: 'Highlight incoming dependents (deg⁻)',
+  popoverOutgoing: 'Highlight outgoing dependencies',
+  popoverIncoming: 'Highlight incoming dependents',
   popoverUnresolved: 'unresolved',
+  dependencies: 'Dependencies',
+  dependents: 'Dependents',
+  via: 'via',
+  emptyDependencies: 'No dependencies',
+  edges: 'edges',
+  emptyDependents: 'No dependents',
+  neighborHint: 'Hover an edge · Click to jump · Backspace to return',
+  historyLabel: 'Location history',
+  historyRoot: 'Overview',
+  back: 'Back',
+  frameAll: 'Frame all',
+  frameReset: 'Reset frame',
+  locatePlugin: 'Locate plugin',
+  searchPlaceholder: 'Search plugins or services…',
+  searchNoResults: 'No matches',
+  searchPlugins: 'Plugins',
+  searchServices: 'Services',
+  searchResults: 'Search results',
+  clearSearch: 'Clear search',
+  inspectorTitle: 'Inspector',
+  inspectorEmptyTitle: 'Select a plugin',
+  inspectorEmptyHint: 'Click a node on the canvas, or press / to search',
+  inspectorCollapse: 'Collapse inspector',
+  inspectorExpand: 'Expand inspector',
+  neighborFilter: 'Filter neighbors…',
+  neighborFilterNoMatch: 'No matching neighbors',
+  clearFilter: 'Clear filter',
+  maximize: 'Maximize',
+  restore: 'Restore',
+  closePanel: 'Close panel',
+  inspectorServiceTitle: 'Service highlight',
+  inspectorServiceHint: 'The canvas is dimmed to edges using this service. Clear the search to exit.',
 }
 
 export const zh: Record<PluginTopologyLocaleKey, string> = {
@@ -93,7 +157,39 @@ export const zh: Record<PluginTopologyLocaleKey, string> = {
   legendId: '本次运行内的创建序号',
   popoverClose: '关闭',
   popoverSource: '来源',
-  popoverOutgoing: '高亮它依赖的插件（出度 deg⁺）',
-  popoverIncoming: '高亮依赖它的插件（入度 deg⁻）',
+  popoverOutgoing: '高亮它依赖的插件',
+  popoverIncoming: '高亮依赖它的插件',
   popoverUnresolved: '未解析',
+  dependencies: '依赖',
+  dependents: '被依赖',
+  via: '经由',
+  emptyDependencies: '没有依赖',
+  edges: '条边',
+  emptyDependents: '没有被依赖',
+  neighborHint: '悬停只看一条边 · 点击跳转 · ⌫ 返回',
+  historyLabel: '位置历史',
+  historyRoot: '全图',
+  back: '返回',
+  frameAll: '全部定位',
+  frameReset: '还原视图',
+  locatePlugin: '定位插件',
+  searchPlaceholder: '搜索插件或服务…',
+  searchNoResults: '没有匹配',
+  searchPlugins: '插件',
+  searchServices: '服务',
+  searchResults: '搜索结果',
+  clearSearch: '清除搜索',
+  inspectorTitle: '检查器',
+  inspectorEmptyTitle: '选中一个插件',
+  inspectorEmptyHint: '点击画布节点，或按 / 搜索',
+  inspectorCollapse: '收起检查器',
+  inspectorExpand: '展开检查器',
+  neighborFilter: '过滤邻居…',
+  neighborFilterNoMatch: '没有匹配的邻居',
+  clearFilter: '清除过滤',
+  maximize: '最大化',
+  restore: '还原',
+  closePanel: '关闭面板',
+  inspectorServiceTitle: '服务高亮',
+  inspectorServiceHint: '画布已聚焦到使用该服务的边；清除搜索即可退出。',
 }

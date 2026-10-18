@@ -21,6 +21,22 @@ Worth noting the boundary: when DSH cannot boot at all, this panel cannot
 render either, so pre-boot diagnosis belongs to a CLI tool. State coloring
 targets the other case — DSH runs, but some plugin misbehaved.
 
+## Quality and drift (standing)
+
+Quality/drift is a standing workstream, not a one-off release task. The first
+slice is in place: CI on Node 22/24, `pnpm check`, orphaned-lib, client-external,
+DSH token, pack and compatibility checks, locale parity, and inspector-model
+tests. Pull the next small increment into a feature PR whenever the feature
+touches that area:
+
+- client component/a11y/visual smoke (Playwright) and a coverage floor;
+- lint/format as a mechanical commit;
+- `graph.render` contract/golden evals;
+- DSH-version compatibility matrix;
+- security/dependency scanning and a release-preflight artifact.
+
+Sources and the full roadmap: [`docs/QUALITY.md`](https://github.com/sleetdrop/dsh-plugin-topology/blob/main/docs/QUALITY.md).
+
 ## Deferred ideas
 
 - Show an instance count (`timer ×3`) instead of the ordinal list. Deferred:
@@ -31,6 +47,13 @@ targets the other case — DSH runs, but some plugin misbehaved.
   closure is a query better served by the JSON export than by the picture.
 
 ## Done
+
+- **Right-side inspector (0.6.0)** — replaced the node-anchored
+  popover with a fixed, collapsible rail: two independently scrolling
+  direction sections, a local neighbor filter, proportional heights, breadcrumb
+  history, off-screen chips, plugin/service search, and arrow-based direction
+  instead of the lone `deg⁺` glyph. The 0.5 popover remains the last released
+  behavior.
 
 - **Click a node for details** — shipped in `0.5.0` as a node-anchored popover
   (state, module source, drawn in/out degree, npm link) with `deg⁺`/`deg⁻`

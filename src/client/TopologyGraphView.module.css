@@ -80,9 +80,41 @@
   fill-opacity: 1;
 }
 
+/* A hovered far end from the neighbor list: one edge/one node full strength. */
+.graphImg :global(.topo-isolate-node) > ellipse,
+.graphImg :global(.topo-isolate-node) > polygon {
+  stroke: var(--dsw-alias-state-business-primary, #4176e6);
+  stroke-opacity: 1;
+  stroke-width: 2.6;
+}
+
+.graphImg :global(.topo-isolate-edge) path {
+  fill: none;
+  stroke: var(--dsw-alias-state-business-primary, #4176e6);
+  stroke-opacity: 1;
+  stroke-width: 2.2;
+}
+
+.graphImg :global(.topo-isolate-edge) polygon {
+  stroke: var(--dsw-alias-state-business-primary, #4176e6);
+  stroke-opacity: 1;
+  fill: var(--dsw-alias-state-business-primary, #4176e6);
+  fill-opacity: 1;
+}
+
+.graphImg :global(.topo-isolate-edge) text {
+  fill: var(--dsw-alias-state-business-primary, #4176e6);
+  fill-opacity: 1;
+}
+
+/* Other lit edges/neighbors recede while one far end is hovered. */
+.graphImg :global(.topo-hl-weak) {
+  opacity: 0.38;
+}
+
 /* Everything outside the lit neighborhood recedes instead of turning gray. */
 .graphImg :global(.topo-dimmed) {
-  opacity: 0.12;
+  opacity: 0.18;
 }
 
 /* One shared transition so hover, selection, and highlight changes do not pop. */
@@ -91,6 +123,9 @@
 .graphImg :global(.topo-hl-node),
 .graphImg :global(.topo-hl-neighbor),
 .graphImg :global(.topo-hl-edge),
+.graphImg :global(.topo-isolate-node),
+.graphImg :global(.topo-isolate-edge),
+.graphImg :global(.topo-hl-weak),
 .graphImg :global(.topo-dimmed) {
   transition-property: opacity, stroke, stroke-opacity, stroke-width, fill, fill-opacity;
   transition-duration: 0.12s;
@@ -102,6 +137,7 @@
 /* Compact floating pill: fit / zoom-out / zoom-level / zoom-in. */
 .zoomControls {
   position: absolute;
+  z-index: 7;
   right: 12px;
   bottom: 12px;
   display: flex;
@@ -167,4 +203,58 @@
   opacity: 0;
   pointer-events: none;
   overflow: hidden;
+}
+
+/* ── Off-screen far-end chips ──
+   Sibling of the viewport, so a chip click cannot start a canvas drag. */
+
+.offscreenLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.offscreenChip {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 200px;
+  padding: 3px 9px;
+  transform: translate(-50%, -50%);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary, #4176e6) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, #ffffff) 92%, transparent);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+  color: var(--dsw-alias-state-business-primary, #4176e6);
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.offscreenChip:hover {
+  background: var(--dsw-alias-state-business-tertiary, #e4edfd);
+}
+
+.offscreenChipIn {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 55%, transparent);
+  color: var(--dsw-alias-state-warn-primary, #d97706);
+}
+
+.offscreenChipIn:hover {
+  background: var(--dsw-alias-state-warn-tertiary, #fff4e5);
+}
+
+.offscreenArrow {
+  flex: none;
+  font-weight: 700;
+}
+
+.offscreenLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

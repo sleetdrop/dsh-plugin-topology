@@ -1,12 +1,21 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { IconChevronDownOutline14, IconDownloadOutline16, OutlineButton } from './icons.tsx'
 import type { Rankdir, RenderFormat, TopologyAnalysis } from '../types.ts'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PluginTopologyLocaleKey } from './locales.ts'
-import { TopologyGraphView, type HighlightDirection, type NodeClickInfo } from './TopologyGraphView.tsx'
-import { NodePopover, type PopoverData } from './NodePopover.tsx'
-import { createTopologyViewStore, type TopologyTransform } from './stores.ts'
+import {
+  TopologyGraphView,
+  type HighlightDirection,
+  type NeighborInfo,
+  type NeighborhoodInfo,
+  type NodeClickInfo,
+  type TopologyGraphHandle,
+} from './TopologyGraphView.tsx'
+import { NodeInspector } from './NodeInspector.tsx'
+import { HistoryBreadcrumb } from './HistoryBreadcrumb.tsx'
+import { TopologySearch, type SearchPluginHit } from './TopologySearch.tsx'
+import type { NodeSelection, TopologyTransform, ViewerActionBindings, ViewerState } from './stores.ts'
 import css from './TopologyView.module.css'
 
 /** Registration-side injected callbacks used by the view. */
@@ -17,15 +26,13 @@ export interface TopologyViewInjected {
   render: (format: RenderFormat, rankdir: Rankdir, theme?: 'light' | 'dark') => Promise<string>
 }
 
-type ViewerHandle = ReturnType<typeof createTopologyViewStore>
-
-/** Viewer state selector: the remembered transform (null until the first fit). */
-export type ViewerStateSelector = SnapshotSelectorHook<{ transform: TopologyTransform | null }>
+/** Viewer state selector: the remembered camera/layout/selection slice. */
+export type ViewerStateSelector = SnapshotSelectorHook<ViewerState>
 
 /** Full component props: the store seat, the injected callbacks, and the locale `t`. */
 export type TopologyViewProps = {
   useStore: ViewerStateSelector
-  actions: { setTransform: (transform: TopologyTransform | null) => void }
+  actions: ViewerActionBindings
   t: (key: PluginTopologyLocaleKey) => string
 } & TopologyViewInjected
 
@@ -100,6 +107,8 @@ async function download(format: RenderFormat, rankdir: Rankdir, theme: 'light' |
 
 interface UnresolvedRow {
   readonly key: string
+  readonly id: string
+  readonly label: string
   readonly plugin: string
   readonly state: string
   readonly reasons: readonly string[]
@@ -112,47 +121,59 @@ function unresolvedRows(analysis: TopologyAnalysis): readonly UnresolvedRow[] {
       .filter(node => node.kind === 'plugin')
       .map(node => [node.id, node.label] as const),
   )
-  const groups = new Map<string, { id: string; plugin: string; state: string; reasons: string[] }>()
+  const collapsed = new Map(analysis.collapsed.nodes.map(node => [node.id, node] as const))
+  const groups = new Map<string, { id: string; label: string; plugin: string; state: string; reasons: string[] }>()
   for (const dep of analysis.graph.unresolved) {
     let group = groups.get(dep.plugin)
     if (group === undefined) {
-      const name = labels.get(dep.plugin) ?? dep.plugin
-      group = { id: dep.plugin, plugin: `${name} [${dep.plugin.replace(/^p:/, '')}]`, state: dep.state, reasons: [] }
+      const name = collapsed.get(dep.plugin)?.label ?? labels.get(dep.plugin) ?? dep.plugin
+      group = {
+        id: dep.plugin,
+        label: name,
+        plugin: `${name} [${dep.plugin.replace(/^p:/, '')}]`,
+        state: dep.state,
+        reasons: [],
+      }
       groups.set(dep.plugin, group)
     }
     group.reasons.push(dep.service)
   }
   return [...groups.values()].map(group => ({
     key: group.id,
+    id: group.id,
+    label: group.label,
     plugin: group.plugin,
     state: group.state,
     reasons: group.reasons,
   }))
 }
 
-/**
- * The durable half of the popover selection: which node was tapped and where on
- * the canvas. The screen position is derived from this and the live transform,
- * so the card tracks its node through pan and zoom.
- */
-type PopoverAnchor = Omit<PopoverData, 'x' | 'y'>
-
 /** The plugin dependency graph view, rendered inside the global footer-action panel. */
 export function TopologyView({ useStore, actions, analyze, render, t }: TopologyViewProps): ReactNode {
   const [request, setRequest] = useState(0)
   const [state, setState] = useState<ViewState>({ status: 'loading' })
   const [unresolvedOpen, setUnresolvedOpen] = useState(false)
-  const [rankdir, setRankdir] = useState<Rankdir>('LR')
   const [theme, setTheme] = useState<'light' | 'dark'>(detectTheme)
-  const [anchor, setAnchor] = useState<PopoverAnchor | null>(null)
-  const [direction, setDirection] = useState<HighlightDirection | null>(null)
+  const [neighborhood, setNeighborhood] = useState<NeighborhoodInfo | null>(null)
+  const [hoveredDotId, setHoveredDotId] = useState<string | null>(null)
+  const [framedView, setFramedView] = useState<{ direction: HighlightDirection; transform: TopologyTransform | null } | null>(null)
+  const [serviceHighlight, setServiceHighlight] = useState<string | null>(null)
+  const graphRef = useRef<TopologyGraphHandle>(null)
+
   const transform = useStore(store => store.transform)
-  const view = transform ?? { x: 0, y: 0, k: 1 }
-  const popover: PopoverData | null = anchor === null ? null : {
-    ...anchor,
-    x: view.x + anchor.anchorX * view.k,
-    y: view.y + anchor.anchorY * view.k,
-  }
+  const rankdir = useStore(store => store.rankdir)
+  const selection = useStore(store => store.selection)
+  const direction = useStore(store => store.direction)
+  const history = useStore(store => store.history)
+  const inspectorCollapsed = useStore(store => store.inspectorCollapsed)
+  const hasSelection = selection !== null
+
+  const readySvg = state.status === 'ready' ? state.svg : null
+  const offscreenChips = useMemo(() => {
+    if (direction === null || neighborhood === null) return []
+    const rows = direction === 'out' ? neighborhood.out : neighborhood.in
+    return rows.map(row => ({ key: row.key, label: row.label, direction }))
+  }, [direction, neighborhood])
 
   // Watch for theme changes via MutationObserver on <html> attributes.
   useEffect(() => {
@@ -178,51 +199,229 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     return () => { current = false }
   }, [request, rankdir, theme, analyze, render])
 
+  // Resolve both neighbor lists from the drawn SVG (the same source the canvas
+  // uses), so names/services always match the picture. Recompute whenever the
+  // selected node changes or the SVG is redrawn (theme/layout).
+  useEffect(() => {
+    if (selection === null || readySvg === null) {
+      setNeighborhood(null)
+      return
+    }
+    const graph = graphRef.current
+    if (graph === null) {
+      setNeighborhood(null)
+      return
+    }
+    setNeighborhood(graph.snapshotNeighbors(selection.key))
+  }, [selection?.key, readySvg])
+
+  // A selection restored from a previous panel session may point at a plugin
+  // that no longer exists; drop it instead of showing a dead card.
+  useEffect(() => {
+    if (selection === null || readySvg === null) return
+    const graph = graphRef.current
+    if (graph === null) return
+    if (graph.snapshotNode(selection.key) === null) actions.clearSelection()
+  }, [selection?.key, readySvg, actions])
+
   const retry = (): void => {
     setState({ status: 'loading' })
     setRequest(value => value + 1)
   }
 
-  const onTransformChange = (next: TopologyTransform): void => { actions.setTransform(next) }
-  const onRankdirChange = (next: Rankdir): void => {
-    if (next === rankdir) return
-    actions.setTransform(null)
-    setRankdir(next)
-  }
+  const onTransformChange = useCallback((next: TopologyTransform): void => {
+    actions.setTransform(next)
+  }, [actions])
+
+  const toggleInspector = useCallback((): void => {
+    actions.setInspectorCollapsed(!inspectorCollapsed)
+  }, [inspectorCollapsed, actions])
+
+  /**
+   * Select a node resolved from the SVG. Explicit navigation (list/search)
+   * pushes the current location so one Backspace restores selection,
+   * direction, and viewport; direct canvas clicks also record the previous
+   * selection, which keeps the trail predictable.
+   */
+  const navigateTo = useCallback((next: NodeSelection, fly: boolean): void => {
+    if (selection !== null && selection.key !== next.key) {
+      actions.pushHistory({ selection, direction, transform })
+    }
+    setHoveredDotId(null)
+    setFramedView(null)
+    setServiceHighlight(null)
+    actions.select(next, null)
+    if (fly) graphRef.current?.flyToNode(next.key)
+  }, [selection, direction, transform, actions])
 
   const onNodeClick = useCallback((info: NodeClickInfo): void => {
-    // Always start from a clean highlight: switching nodes must not carry the
-    // previous node's direction over to the new one.
-    setDirection(null)
-    setAnchor(prev => {
-      // Toggle: clicking the same node closes the popover.
-      if (prev !== null && prev.nodeId === info.nodeId) return null
-      return {
-        key: info.key,
-        nodeId: info.nodeId,
-        label: info.label,
-        anchorX: info.anchorX,
-        anchorY: info.anchorY,
-        outCount: info.outCount,
-        inCount: info.inCount,
-      }
-    })
-  }, [])
+    if (selection !== null && selection.key === info.key) {
+      setHoveredDotId(null)
+      setFramedView(null)
+      setServiceHighlight(null)
+      actions.clearSelection()
+      return
+    }
+    navigateTo(info, false)
+  }, [selection, actions, navigateTo])
 
   const onEmptyClick = useCallback((): void => {
-    setAnchor(null)
-    setDirection(null)
-  }, [])
+    setHoveredDotId(null)
+    setFramedView(null)
+    setServiceHighlight(null)
+    actions.clearSelection()
+  }, [actions])
 
   const closePopover = useCallback((): void => {
-    setAnchor(null)
-    setDirection(null)
+    setHoveredDotId(null)
+    setFramedView(null)
+    setServiceHighlight(null)
+    actions.clearSelection()
+  }, [actions])
+
+  /** Tapping the active direction header again drops back to plain selection. */
+  const toggleDirection = useCallback((next: HighlightDirection): void => {
+    setHoveredDotId(null)
+    setFramedView(null)
+    actions.setDirection(direction === next ? null : next)
+  }, [direction, actions])
+
+  /** Clicking a far end (list row or border chip) selects it and flies there. */
+  const selectByKey = useCallback((key: string): void => {
+    const graph = graphRef.current
+    if (graph === null) return
+    const snapshot = graph.snapshotNode(key)
+    if (snapshot === null) return
+    if (selection !== null && selection.key === snapshot.key) return
+    navigateTo(snapshot, true)
+  }, [selection, navigateTo])
+
+  const selectNeighbor = useCallback((neighbor: NeighborInfo): void => {
+    selectByKey(neighbor.key)
+  }, [selectByKey])
+
+  /** Hovering a row isolates that one edge without changing the selection. */
+  const hoverNeighbor = useCallback((neighbor: NeighborInfo | null): void => {
+    setHoveredDotId(neighbor?.dotId ?? null)
   }, [])
 
-  /** Tapping the active pill again drops back to plain selection. */
-  const toggleDirection = useCallback((next: HighlightDirection): void => {
-    setDirection(current => current === next ? null : next)
-  }, [])
+  /**
+   * Frame the selected node plus every far end in one direction. Pressing the
+   * same control again returns to the pre-frame view instead of leaving the
+   * user stuck at 0.2×.
+   */
+  const frameDirection = useCallback((next: HighlightDirection): void => {
+    if (selection === null || neighborhood === null) return
+    if (framedView !== null && framedView.direction === next) {
+      const previous = framedView.transform
+      setFramedView(null)
+      graphRef.current?.applyTransform(previous, true)
+      return
+    }
+    const rows = next === 'out' ? neighborhood.out : neighborhood.in
+    if (rows.length === 0) return
+    setFramedView({ direction: next, transform })
+    setHoveredDotId(null)
+    actions.setDirection(next)
+    graphRef.current?.frameNodes([selection.key, ...rows.map(row => row.key)])
+  }, [selection, neighborhood, framedView, transform, actions])
+
+  /**
+   * Restore a place from the breadcrumb. Forward entries are dropped, browser
+   * style: the restored entry becomes the current location.
+   */
+  const restoreHistory = useCallback((index: number): void => {
+    const entry = history[index]
+    if (entry === undefined) return
+    setHoveredDotId(null)
+    setFramedView(null)
+    setServiceHighlight(null)
+    actions.setHistory(history.slice(0, index))
+    actions.select(entry.selection, entry.direction)
+    const graph = graphRef.current
+    if (graph !== null) graph.applyTransform(entry.transform, true)
+  }, [history, actions])
+
+  const onBack = useCallback((): void => {
+    if (history.length === 0) return
+    restoreHistory(history.length - 1)
+  }, [history.length, restoreHistory])
+
+  // Selection keyboard: Escape clears first (the panel closes on the next
+  // Escape), Backspace / ⌘[ walks the history back. The panel's own Escape
+  // handler defers while a selection is active, so both listeners coexist.
+  useEffect(() => {
+    if (!hasSelection) return
+    const onKey = (event: KeyboardEvent): void => {
+      const active = document.activeElement
+      const editing = active instanceof HTMLInputElement
+        || active instanceof HTMLTextAreaElement
+        || (active instanceof HTMLElement && active.isContentEditable)
+      if (event.key === 'Escape') {
+        actions.clearSelection()
+        return
+      }
+      if (editing) return
+      const backChord = event.key === 'Backspace' || ((event.metaKey || event.ctrlKey) && event.key === '[')
+      if (!backChord) return
+      event.preventDefault()
+      if (history.length > 0) onBack()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => { window.removeEventListener('keydown', onKey) }
+  }, [hasSelection, history.length, onBack, actions])
+
+
+  const onHome = useCallback((): void => {
+    setHoveredDotId(null)
+    setFramedView(null)
+    setServiceHighlight(null)
+    actions.clearSelection()
+    graphRef.current?.fitAll()
+  }, [actions])
+
+  const onRankdirChange = useCallback((next: Rankdir): void => {
+    if (next === rankdir) return
+    // The layout changes wholesale; old anchors are no longer meaningful.
+    setHoveredDotId(null)
+    setFramedView(null)
+    setServiceHighlight(null)
+    actions.setRankdir(next)
+    actions.setTransform(null)
+    actions.clearSelection()
+  }, [rankdir, actions])
+
+  /** Search → plugin: resolve the drawn group (merged names included) and fly there. */
+  const pickPlugin = useCallback((hit: SearchPluginHit): void => {
+    const graph = graphRef.current
+    if (graph === null) return
+    const key = graph.findNodeForPlugin(hit.id, hit.label)
+    if (key === null) return
+    const snapshot = graph.snapshotNode(key)
+    if (snapshot === null) return
+    setServiceHighlight(null)
+    navigateTo(snapshot, true)
+  }, [navigateTo])
+
+  /** Search → service: dim to that service's edges; clearing restores the graph. */
+  const pickService = useCallback((service: string | null): void => {
+    setServiceHighlight(service)
+    if (service === null) return
+    setHoveredDotId(null)
+    setFramedView(null)
+    actions.clearSelection()
+  }, [actions])
+
+  /** Jump from the unresolved table to the offending plugin (merged groups included). */
+  const locatePlugin = useCallback((row: UnresolvedRow): void => {
+    const graph = graphRef.current
+    if (graph === null) return
+    const key = graph.findNodeForPlugin(row.id, row.label)
+    if (key === null) return
+    const snapshot = graph.snapshotNode(key)
+    if (snapshot === null) return
+    navigateTo(snapshot, true)
+  }, [navigateTo])
 
   return (
     <div className={css.root} data-plugin-topology-view="">
@@ -264,6 +463,13 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
                 ))}
               </div>
             </div>
+            <TopologySearch
+              analysis={state.analysis}
+              activeService={serviceHighlight}
+              onPickPlugin={pickPlugin}
+              onPickService={pickService}
+              t={t}
+            />
             <div className={css.actions}>
               <div className={css.rankdirGroup} role="group" aria-label={t('rankdirToggle')}>
                 <button
@@ -308,7 +514,16 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
                   <tbody>
                     {unresolvedRows(state.analysis).map(row => (
                       <tr key={row.key}>
-                        <td className={css.unresolvedPlugin}>{row.plugin}</td>
+                        <td className={css.unresolvedPlugin}>
+                          <button
+                            type="button"
+                            className={css.unresolvedPluginButton}
+                            title={t('locatePlugin')}
+                            onClick={() => { locatePlugin(row) }}
+                          >
+                            {row.plugin}
+                          </button>
+                        </td>
                         <td className={css.unresolvedState}>{row.state}</td>
                         <td className={css.unresolvedService}>{row.reasons.join(' · ')}</td>
                       </tr>
@@ -333,32 +548,55 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
             </span>
           </div>
           <div className={css.body}>
-            <TopologyGraphView
-              svg={state.svg}
-              alt={t('title')}
-              height="100%"
-              transform={transform}
-              onTransformChange={onTransformChange}
-              zoomInLabel={t('zoomIn')}
-              zoomOutLabel={t('zoomOut')}
-              resetViewLabel={t('resetView')}
-              zoomLevelLabel={t('zoomLevel')}
-              onNodeClick={onNodeClick}
-              onEmptyClick={onEmptyClick}
-              selectedKey={popover?.key ?? null}
-              selectedDotId={popover?.nodeId ?? null}
-              direction={direction}
-            />
-            {popover !== null && (
-              <NodePopover
-                popover={popover}
-                analysis={state.analysis}
+            <div className={css.canvasWrap}>
+              <TopologyGraphView
+                ref={graphRef}
+                svg={state.svg}
+                alt={t('title')}
+                height="100%"
+                transform={transform}
+                onTransformChange={onTransformChange}
+                zoomInLabel={t('zoomIn')}
+                zoomOutLabel={t('zoomOut')}
+                resetViewLabel={t('resetView')}
+                zoomLevelLabel={t('zoomLevel')}
+                onNodeClick={onNodeClick}
+                onEmptyClick={onEmptyClick}
+                selectedKey={selection?.key ?? null}
+                selectedDotId={selection?.dotId ?? null}
                 direction={direction}
-                onToggleDirection={toggleDirection}
-                onClose={closePopover}
-                t={t}
+                hoveredDotId={hoveredDotId}
+                serviceHighlight={serviceHighlight}
+                offscreenChips={offscreenChips}
+                onChipSelect={selectByKey}
               />
-            )}
+              {selection !== null && (
+                <HistoryBreadcrumb
+                  selection={selection}
+                  history={history}
+                  onHome={onHome}
+                  onBack={onBack}
+                  onRestore={restoreHistory}
+                  t={t}
+                />
+              )}
+            </div>
+            <NodeInspector
+              selection={selection}
+              analysis={state.analysis}
+              direction={direction}
+              neighborhood={neighborhood}
+              framedDirection={framedView?.direction ?? null}
+              collapsed={inspectorCollapsed}
+              onToggleCollapsed={toggleInspector}
+              onToggleDirection={toggleDirection}
+              onFrameDirection={frameDirection}
+              onSelectNeighbor={selectNeighbor}
+              onHoverNeighbor={hoverNeighbor}
+              onClose={closePopover}
+              serviceHighlight={serviceHighlight}
+              t={t}
+            />
           </div>
         </>
       ) : null}
