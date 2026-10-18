@@ -149,7 +149,8 @@
 | 版本 | 内容 | 说明 |
 | --- | --- | --- |
 | `0.6.0` | A1 右侧 inspector（独立滚动 + 过滤 + 折叠）+ A2 飞行/返回 + A3 全部定位 + A4 简化 chip + A5 搜索 + 未解析行可点 | 不动远程协议；直接解决“目标在屏幕外”和高 degree 遮挡 |
-| `0.7.0` | B 聚焦视图（`focus` 参数）+ A4 完整版 + 状态着色 + 小地图 | 需要 host/client 同步改；先做 1 跳 |
+| `0.7.0` | Service inspector + missing services（live topology doctor；见 [`0.7-service-inspector.md`](0.7-service-inspector.md)） | 只诊断已加载的 DSH；不做 boot rescue |
+| `0.7.x` | B 聚焦视图 + A4 完整版 + 状态着色 + 小地图 + impact/SPOF/layers | 需要 host/client 同步改；先做 1 跳 |
 
 验收口径：
 
