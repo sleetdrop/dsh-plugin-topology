@@ -109,7 +109,7 @@
     "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
     "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2",
-    "@types/node": "^24.0.0",
+    "@types/node": "^24.19.2",
     "@types/react": "~18.3.1",
     "lightningcss": "1.33.0",
     "react": "^18.2.0",
@@ -118,7 +118,7 @@
   },
   "dependencies": {
     "@hpcc-js/wasm-graphviz": "^1.29.2",
-    "zod": "^4.4.3"
+    "zod": "^4.6.7"
   },
   "publishConfig": {
     "access": "public",
