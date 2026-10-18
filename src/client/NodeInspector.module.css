@@ -612,11 +612,11 @@
   color: var(--dsw-alias-label-tertiary, #94a3b8);
 }
 
-/* ── Startup timeline ── */
+/* ── Startup timeline: one integrated plot, not two strips ── */
 
 .timeline {
   flex: none;
-  padding: 7px 12px 6px;
+  padding: 8px 12px 7px;
   border-bottom: 1px solid var(--dsw-alias-border-l2, #0000001a);
 }
 
@@ -625,7 +625,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 .timelineTitle {
@@ -641,114 +641,109 @@
   white-space: nowrap;
 }
 
-.timelineRows {
+.timelinePlot {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-}
-
-.timelineRow {
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
-}
-
-.timelineRowLabel {
-  overflow: hidden;
-  color: var(--dsw-alias-label-tertiary, #94a3b8);
-  font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.timelineTrack {
-  position: relative;
-  height: 10px;
-  border-radius: 3px;
-  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-}
-
-.timelineTick {
-  position: absolute;
-  bottom: 1px;
-  width: 1.5px;
-  height: 8px;
-  border-radius: 1px;
-  background: var(--dsw-alias-label-tertiary, #94a3b8);
-  opacity: 0.4;
-  transform: translateX(-50%);
-}
-
-.timelineTickActive {
-  background: var(--dsw-alias-state-business-primary, #4176e6);
-  opacity: 0.45;
-}
-
-.timelineTickFailed {
-  background: var(--dsw-alias-state-error-primary, #ec1313);
-  opacity: 0.8;
-}
-
-.timelineTickPending {
-  background: var(--dsw-alias-state-warn-primary, #d97706);
-  opacity: 0.75;
-}
-
-.timelineTickOther {
-  background: var(--dsw-alias-label-tertiary, #94a3b8);
+  gap: 1px;
 }
 
 .timelineMark {
   position: absolute;
-  top: 50%;
-  z-index: 2;
-  width: 6px;
-  height: 6px;
+  width: 11px;
+  height: 8px;
   padding: 0;
-  border: 1px solid var(--dsw-alias-bg-layer-2, #ffffff);
-  border-radius: 50%;
-  background: var(--dsw-alias-label-tertiary, #94a3b8);
+  border: none;
+  background: transparent;
   cursor: pointer;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
 }
 
-.timelineMark:hover {
-  z-index: 3;
-  transform: translate(-50%, -50%) scale(1.35);
+.timelineMarkUp {
+  top: -4px;
+}
+
+.timelineMarkDown {
+  bottom: -4px;
+}
+
+.timelineMark::before {
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  width: 6px;
+  height: 5px;
+  background: var(--dsw-alias-state-business-primary, #4176e6);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  content: '';
+  transform: translateX(-50%);
+}
+
+.timelineMarkDown::before {
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: var(--dsw-alias-state-warn-primary, #d97706);
+}
+
+.timelineMarkLate::before {
+  background: var(--dsw-alias-state-error-primary, #ec1313);
+}
+
+.timelineMark:hover::before {
+  transform: translateX(-50%) scale(1.25);
 }
 
 .timelineMark:focus-visible {
+  border-radius: 2px;
   outline: 2px solid var(--dsw-alias-state-business-primary, #4176e6);
-  outline-offset: 1px;
-  transform: translate(-50%, -50%) scale(1.35);
+  outline-offset: 0;
 }
 
-.timelineMarkSelected {
-  width: 8px;
-  height: 8px;
-  background: var(--dsw-alias-state-business-primary, #4176e6);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-business-primary, #4176e6) 22%, transparent);
+.timelineBand {
+  position: relative;
+  height: 17px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2, #0000001a);
 }
 
-.timelineMarkDependency {
-  background: var(--dsw-alias-state-business-primary, #4176e6);
+.timelineBars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5px;
 }
 
-.timelineMarkDependent {
-  background: var(--dsw-alias-state-warn-primary, #d97706);
+.timelineBar {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 1px 1px 0 0;
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary, #94a3b8) 42%, transparent);
 }
 
-.timelineMarkProvider {
-  background: var(--dsw-alias-state-business-primary, #4176e6);
+.timelineBar:hover {
+  background: color-mix(in srgb, var(--dsw-alias-label-secondary, #61666b) 55%, transparent);
 }
 
-.timelineMarkConsumer {
-  background: var(--dsw-alias-state-warn-primary, #d97706);
+.timelineSelectedSpan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 16%, transparent);
+  pointer-events: none;
 }
 
-.timelineMarkLate {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-error-primary, #ec1313) 55%, transparent);
+.timelineSelectedDot {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid var(--dsw-alias-bg-layer-2, #ffffff);
+  border-radius: 50%;
+  background: var(--dsw-alias-label-primary, #0f1115);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 35%, transparent);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 .timelineLegend {
@@ -774,19 +769,29 @@
 .timelineSwatch {
   display: inline-block;
   width: 6px;
+  height: 5px;
+}
+
+.timelineSwatchSelected {
+  width: 6px;
   height: 6px;
   border-radius: 50%;
+  background: var(--dsw-alias-label-primary, #0f1115);
 }
 
-.timelineSwatchSelected,
-.timelineSwatchDependency,
-.timelineSwatchProvider {
+.timelineSwatchUp {
   background: var(--dsw-alias-state-business-primary, #4176e6);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
-.timelineSwatchDependent,
-.timelineSwatchConsumer {
+.timelineSwatchDown {
   background: var(--dsw-alias-state-warn-primary, #d97706);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.timelineSwatchLate {
+  background: var(--dsw-alias-state-error-primary, #ec1313);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
 /* ── Service inspector header ── */

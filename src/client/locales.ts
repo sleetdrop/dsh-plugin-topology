@@ -80,8 +80,6 @@ export type PluginTopologyLocaleKey =
   | 'missingServiceNoProvider'
   | 'startupOrder'
   | 'startupInstances'
-  | 'startupAll'
-  | 'startupSelf'
   | 'startupSelected'
   | 'startupDependency'
   | 'startupDependent'
@@ -167,8 +165,6 @@ export const en: Record<PluginTopologyLocaleKey, string> = {
   missingServiceNoProvider: 'no provider',
   startupOrder: 'Startup order',
   startupInstances: 'instances',
-  startupAll: 'all',
-  startupSelf: 'node',
   startupSelected: 'selected',
   startupDependency: 'dependency',
   startupDependent: 'dependent',
@@ -255,8 +251,6 @@ export const zh: Record<PluginTopologyLocaleKey, string> = {
   missingServiceNoProvider: '无 provider',
   startupOrder: '创建顺序',
   startupInstances: '个实例',
-  startupAll: '全部',
-  startupSelf: '当前节点',
   startupSelected: '选中',
   startupDependency: '依赖',
   startupDependent: '被依赖',
