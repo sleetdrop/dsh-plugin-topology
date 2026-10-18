@@ -9,6 +9,23 @@ updates:
       dev-minor-patch:
         dependency-type: development
         update-types: [minor, patch]
+    ignore:
+      # DSH is upgraded as one coordinated step, not package by package: the
+      # peer set is pinned to one rc line and the compatibility table in
+      # README.md must move with it (docs/DSH-UPGRADE.md). Per-package PRs
+      # would cut the rc line in half.
+      - dependency-name: "@deepseek-ai/*"
+      # The plugin ships no react. The panel runs against the react supplied by
+      # the DSH shell's frozen module table, so its major has to move together
+      # with the host, not ahead of it.
+      - dependency-name: react
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      # Types must describe the Node majors CI runs (22 and 24, see engines);
+      # a newer major would typecheck APIs that are absent at runtime.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
