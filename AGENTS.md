@@ -29,9 +29,32 @@ between plugin version and validated DSH release is the compatibility table in
    then hand over the command. Never claim a release is complete on the strength
    of your own registry poll taken seconds after publishing (see traps).
 4. **Finish reviewing before committing, and do not tag merely because work
-   looks done.** Small post-release fixes are expected to sit on `main`,
-   untagged, and ride the next version — that is the documented policy, not a
-   gap to be closed by cutting a version for every fix.
+   looks done.** Small post-release fixes are expected to land on `main`
+   through a PR, untagged, and ride the next version — that is the documented
+   policy, not a gap to be closed by cutting a version for every fix.
+
+## Branch workflow — `main` is protected
+
+GitHub branch protection is on for `main` and applies to admins: direct pushes
+are rejected, force-push and deletion are blocked, every conversation must be
+resolved, and a PR can merge only when `quality (node 22)` and
+`quality (node 24)` are green on a branch up to date with `main`. Merged
+branches are deleted automatically. Do not try `git push origin main`; expect
+it to fail.
+
+- Start every change on a short-lived branch off `main`: `feat/…`, `fix/…`,
+  `docs/…`, `chore/…`; releases use `release/vX.Y.Z`.
+- Open a PR (`gh pr create`) using the repository template, with commands and
+  real output under Evidence. Wait for both checks — never merge red, never
+  bypass protection.
+- Keep the branch current by rebasing: `git fetch origin && git rebase
+  origin/main`. Required checks are strict, so a stale branch cannot merge.
+  `git push --force-with-lease` is allowed only on your own feature branch,
+  never on `main`; never merge `main` back into a feature branch.
+- Squash-merge (`gh pr merge --squash --delete-branch`) so one PR is one
+  commit on a linear `main`.
+- Tags are not branches: after the release PR merges, tag the squash-merged
+  release commit and push the tag directly.
 
 ## Quality gates
 
@@ -91,7 +114,8 @@ Walk all six and **report what you actually checked**, before running
 6. **Smoke test** — `dsh --profile pt-test --no-open --port 0`, then wait for
    the user's confirmation.
 
-Only after 1–6 are reported: release commit → tag → push. Publishing follows
+Only after 1–6 are reported: release commit on a `release/vX.Y.Z` branch → PR
+→ squash-merge → tag the merged commit → push the tag. Publishing follows
 separately, by hand.
 
 ## Known traps

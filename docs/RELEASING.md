@@ -32,6 +32,22 @@ because the upstream had a large jump or because the adaptation was difficult.
 - **Git tags** (`v0.x.y`) are the canonical source reference.
 - **GitHub Releases** are NOT used. Do not create them. Tags + npm suffice.
 
+## Branch workflow
+
+`main` is protected, admins included. Every change reaches it through a pull
+request: `quality (node 22)` and `quality (node 24)` must pass on a branch that
+is up to date with `main`, force-push and deletion are blocked, and merged
+branches are deleted automatically. The full rules agents must follow are in
+[`../AGENTS.md`](../AGENTS.md); the short version:
+
+- branch off `main` (`feat/…`, `fix/…`, `docs/…`, `chore/…`; releases use
+  `release/vX.Y.Z`), open a PR, wait for both checks, then
+  `gh pr merge --squash --delete-branch`;
+- rebase onto `origin/main` rather than merging `main` into the branch, since
+  the required checks are strict;
+- tags are not branches: tag the squash-merged release commit after the PR
+  lands.
+
 ## One release, end to end
 
 Pick a new plugin version using plain semver (e.g. `0.2.0`), and the DSH rc you
@@ -71,11 +87,19 @@ grep -oE 'require\("[^"]+"\)' lib/client.js | sort -u
 #    pt-test profile links this checkout via a symlink, so rebuilds show up:
 dsh --profile pt-test --no-open --port 0    # open the printed token URL
 
-# 7. Only once 1–6 are done and reported: commit, tag, push.
+# 7. Only once 1–6 are done and reported: put the release commit on a branch,
+#    open a PR, let both checks pass, squash-merge, then tag the merged commit.
+git switch -c release/v<version>
 git add -A
 git commit -m "chore: release <version> (targets dsh <rc>)"
+git push -u origin release/v<version>
+gh pr create    # the template applies; fill Evidence + Release impact
+
+# Wait for "quality (node 22)" and "quality (node 24)" to pass, then:
+gh pr merge --squash --delete-branch
+git switch main && git pull --ff-only
+# Tag the squash commit; if main moved since the merge, use that commit's SHA.
 git tag -a v<version> -m "dsh-plugin-topology v<version> — targets dsh <rc>"
-git push origin main
 git push origin v<version>
 ```
 
@@ -143,9 +167,10 @@ patience, not a re-run.
 
 ## Carrying unreleased fixes
 
-Small post-release fixes may land on `main` with no tag and no release; the next
-version picks them up. `main` then sits ahead of the newest tag while
-`package.json` still holds the *published* version. That is intentional, and it
+Small post-release fixes may land on `main` — through a PR, like everything
+else — with no tag and no release; the next version picks them up. `main` then
+sits ahead of the newest tag while `package.json` still holds the *published*
+version. That is intentional, and it
 doubles as a safety net: forgetting to bump means `pnpm publish` fails with
 "version already exists" rather than silently re-publishing over a live version.
 

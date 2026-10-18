@@ -72,7 +72,7 @@ listed but not yet mined.
 | Area | Before the first slice | First slice (this branch) | Next |
 | --- | --- | --- | --- |
 | Tests | 1 host test file (16 tests), no client coverage | + inspector model (merged labels, state order, filter, npm URL) + locale parity → **26 tests** | React component tests, keyboard/a11y, coverage threshold |
-| CI | none | GitHub Actions, Node 22 + 24, `pnpm check` | branch protection; DSH-version matrix |
+| CI | none | GitHub Actions, Node 22 + 24, `pnpm check`; `main` protected (PR required, both checks) | DSH-version matrix |
 | Lint/format | none | — | Biome or ESLint + Prettier (avoid a mass reformat mid-release) |
 | Drift | manual six-step review | 5 scripts + locale test, wired into `pnpm check` and CI | generated docs, changelog check |
 | Packaging | manual `pnpm pack --dry-run` | `check-pack` + release-preflight artifact | provenance/signature if the registry supports it |
