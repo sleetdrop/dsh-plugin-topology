@@ -13,8 +13,11 @@ updates:
       # DSH is upgraded as one coordinated step, not package by package: the
       # peer set is pinned to one rc line and the compatibility table in
       # README.md must move with it (docs/DSH-UPGRADE.md). Per-package PRs
-      # would cut the rc line in half.
+      # would cut the rc line in half. Listing the version levels keeps this to
+      # *version* updates only: `update-types` does not filter security
+      # updates, so a vulnerable DSH peer still opens a PR.
       - dependency-name: "@deepseek-ai/*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
       # The plugin ships no react. The panel runs against the react supplied by
       # the DSH shell's frozen module table, so its major has to move together
       # with the host, not ahead of it.
@@ -22,8 +25,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@types/react"
         update-types: ["version-update:semver-major"]
-      # Types must describe the Node majors CI runs (22 and 24, see engines);
-      # a newer major would typecheck APIs that are absent at runtime.
+      # CI tests Node 22 and 24 (ci.yml); types must not outrun the highest
+      # tested major, or they typecheck APIs the tested runtimes do not have.
+      # `engines` still allows newer Node for consumers — that is not CI
+      # coverage, so 26 is deliberately not taken.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
