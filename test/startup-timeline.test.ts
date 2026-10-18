@@ -88,6 +88,19 @@ describe('buildStartupTimeline', () => {
     assert.deepEqual(timeline.selected.map(item => item.ordinal), [48, 93])
   })
 
+  it('resolves a merged SVG node from its raw member ids', () => {
+    const merged = {
+      ...analysis,
+      collapsed: {
+        ...analysis.collapsed,
+        nodes: [...analysis.collapsed.nodes, plugin('p:48', 'SessionStore'), plugin('p:93', 'SessionStore')],
+      },
+    }
+    const timeline = buildStartupTimeline(merged, ['p:48', 'p:93'])
+    assert.deepEqual(timeline.selected.map(item => item.ordinal), [48, 93])
+    assert.deepEqual(timeline.selected.map(item => item.plugin.id), ['p:48', 'p:93'])
+  })
+
   it('switches to service mode with providers and consumers', () => {
     const timeline = buildStartupTimeline(analysis, [], 's:root:tools')
     assert.ok(timeline.service)

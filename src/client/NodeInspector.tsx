@@ -141,8 +141,9 @@ export function NodeInspector({
   const { node, unresolved, members } = resolved
   const memberIds = members.map(member => member.id)
   const missing = missingServices(analysis, memberIds)
-  // Timeline roles/edges are keyed by the drawn node id (merged `m:N` included).
-  const timeline = buildStartupTimeline(analysis, [node.id])
+  // Timeline roles/edges use the raw instance ids; merged SVG nodes (`m:N`)
+  // do not exist in the collapsed graph, but their member ids do.
+  const timeline = buildStartupTimeline(analysis, memberIds)
   const url = npmUrl(node.source)
   const displayLabel = selection.label !== '' ? selection.label : node.label
 
