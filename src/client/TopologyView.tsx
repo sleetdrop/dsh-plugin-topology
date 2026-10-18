@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { IconChevronDownOutline14, IconDownloadOutline16, OutlineButton } from './icons.tsx'
-import type { Rankdir, RenderFormat, TopologyAnalysis } from '../types.ts'
+import type { PluginNode, Rankdir, RenderFormat, TopologyAnalysis } from '../types.ts'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PluginTopologyLocaleKey } from './locales.ts'
 import {
@@ -13,8 +13,9 @@ import {
   type TopologyGraphHandle,
 } from './TopologyGraphView.tsx'
 import { NodeInspector } from './NodeInspector.tsx'
+import { ServiceInspector } from './ServiceInspector.tsx'
 import { HistoryBreadcrumb } from './HistoryBreadcrumb.tsx'
-import { TopologySearch, type SearchPluginHit } from './TopologySearch.tsx'
+import { TopologySearch, type SearchPluginHit, type SearchServiceHit } from './TopologySearch.tsx'
 import type { NodeSelection, TopologyTransform, ViewerActionBindings, ViewerState } from './stores.ts'
 import css from './TopologyView.module.css'
 
@@ -157,7 +158,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
   const [neighborhood, setNeighborhood] = useState<NeighborhoodInfo | null>(null)
   const [hoveredDotId, setHoveredDotId] = useState<string | null>(null)
   const [framedView, setFramedView] = useState<{ direction: HighlightDirection; transform: TopologyTransform | null } | null>(null)
-  const [serviceHighlight, setServiceHighlight] = useState<string | null>(null)
+  const [serviceSelection, setServiceSelection] = useState<SearchServiceHit | null>(null)
   const graphRef = useRef<TopologyGraphHandle>(null)
 
   const transform = useStore(store => store.transform)
@@ -167,6 +168,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
   const history = useStore(store => store.history)
   const inspectorCollapsed = useStore(store => store.inspectorCollapsed)
   const hasSelection = selection !== null
+  const serviceHighlight = serviceSelection?.service ?? null
 
   const readySvg = state.status === 'ready' ? state.svg : null
   const offscreenChips = useMemo(() => {
@@ -249,7 +251,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     }
     setHoveredDotId(null)
     setFramedView(null)
-    setServiceHighlight(null)
+    setServiceSelection(null)
     actions.select(next, null)
     if (fly) graphRef.current?.flyToNode(next.key)
   }, [selection, direction, transform, actions])
@@ -258,7 +260,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     if (selection !== null && selection.key === info.key) {
       setHoveredDotId(null)
       setFramedView(null)
-      setServiceHighlight(null)
+      setServiceSelection(null)
       actions.clearSelection()
       return
     }
@@ -266,16 +268,16 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
   }, [selection, actions, navigateTo])
 
   const onEmptyClick = useCallback((): void => {
+    setServiceSelection(null)
     setHoveredDotId(null)
     setFramedView(null)
-    setServiceHighlight(null)
     actions.clearSelection()
   }, [actions])
 
   const closePopover = useCallback((): void => {
     setHoveredDotId(null)
     setFramedView(null)
-    setServiceHighlight(null)
+    setServiceSelection(null)
     actions.clearSelection()
   }, [actions])
 
@@ -335,7 +337,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     if (entry === undefined) return
     setHoveredDotId(null)
     setFramedView(null)
-    setServiceHighlight(null)
+    setServiceSelection(null)
     actions.setHistory(history.slice(0, index))
     actions.select(entry.selection, entry.direction)
     const graph = graphRef.current
@@ -375,7 +377,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
   const onHome = useCallback((): void => {
     setHoveredDotId(null)
     setFramedView(null)
-    setServiceHighlight(null)
+    setServiceSelection(null)
     actions.clearSelection()
     graphRef.current?.fitAll()
   }, [actions])
@@ -385,7 +387,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     // The layout changes wholesale; old anchors are no longer meaningful.
     setHoveredDotId(null)
     setFramedView(null)
-    setServiceHighlight(null)
+    setServiceSelection(null)
     actions.setRankdir(next)
     actions.setTransform(null)
     actions.clearSelection()
@@ -399,18 +401,36 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     if (key === null) return
     const snapshot = graph.snapshotNode(key)
     if (snapshot === null) return
-    setServiceHighlight(null)
+    setServiceSelection(null)
     navigateTo(snapshot, true)
   }, [navigateTo])
 
-  /** Search → service: dim to that service's edges; clearing restores the graph. */
-  const pickService = useCallback((service: string | null): void => {
-    setServiceHighlight(service)
-    if (service === null) return
+  /**
+   * Search → service: open the service inspector and dim the canvas to that
+   * service's edges. Picking the same service again (or closing) restores the
+   * graph. A service is not a node, so any node selection is cleared.
+   */
+  const pickService = useCallback((hit: SearchServiceHit | null): void => {
+    if (hit === null || serviceSelection?.id === hit.id) {
+      setServiceSelection(null)
+      return
+    }
+    setServiceSelection(hit)
     setHoveredDotId(null)
     setFramedView(null)
     actions.clearSelection()
-  }, [actions])
+  }, [serviceSelection, actions])
+
+  /** Timeline / service-row click: resolve the drawn node and fly to it. */
+  const selectPlugin = useCallback((plugin: PluginNode): void => {
+    const graph = graphRef.current
+    if (graph === null) return
+    const key = graph.findNodeForPlugin(plugin.id, plugin.label)
+    if (key === null) return
+    const snapshot = graph.snapshotNode(key)
+    if (snapshot === null) return
+    navigateTo(snapshot, true)
+  }, [navigateTo])
 
   /** Jump from the unresolved table to the offending plugin (merged groups included). */
   const locatePlugin = useCallback((row: UnresolvedRow): void => {
@@ -465,7 +485,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
             </div>
             <TopologySearch
               analysis={state.analysis}
-              activeService={serviceHighlight}
+              activeServiceId={serviceSelection?.id ?? null}
               onPickPlugin={pickPlugin}
               onPickService={pickService}
               t={t}
@@ -581,22 +601,34 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
                 />
               )}
             </div>
-            <NodeInspector
-              selection={selection}
-              analysis={state.analysis}
-              direction={direction}
-              neighborhood={neighborhood}
-              framedDirection={framedView?.direction ?? null}
-              collapsed={inspectorCollapsed}
-              onToggleCollapsed={toggleInspector}
-              onToggleDirection={toggleDirection}
-              onFrameDirection={frameDirection}
-              onSelectNeighbor={selectNeighbor}
-              onHoverNeighbor={hoverNeighbor}
-              onClose={closePopover}
-              serviceHighlight={serviceHighlight}
-              t={t}
-            />
+            {serviceSelection === null ? (
+              <NodeInspector
+                selection={selection}
+                analysis={state.analysis}
+                direction={direction}
+                neighborhood={neighborhood}
+                framedDirection={framedView?.direction ?? null}
+                collapsed={inspectorCollapsed}
+                onToggleCollapsed={toggleInspector}
+                onToggleDirection={toggleDirection}
+                onFrameDirection={frameDirection}
+                onSelectNeighbor={selectNeighbor}
+                onHoverNeighbor={hoverNeighbor}
+                onClose={closePopover}
+                onSelectPlugin={selectPlugin}
+                t={t}
+              />
+            ) : (
+              <ServiceInspector
+                serviceId={serviceSelection.id}
+                analysis={state.analysis}
+                collapsed={inspectorCollapsed}
+                onToggleCollapsed={toggleInspector}
+                onClose={() => { pickService(null) }}
+                onSelectPlugin={selectPlugin}
+                t={t}
+              />
+            )}
           </div>
         </>
       ) : null}

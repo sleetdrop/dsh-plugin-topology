@@ -63,6 +63,29 @@ export type PluginTopologyLocaleKey =
   | 'closePanel'
   | 'inspectorServiceTitle'
   | 'inspectorServiceHint'
+  | 'providersTitle'
+  | 'consumersTitle'
+  | 'providersUnit'
+  | 'consumersUnit'
+  | 'serviceInspectorTitle'
+  | 'serviceBusFactor'
+  | 'serviceCritical'
+  | 'serviceSingleProvider'
+  | 'serviceHealthy'
+  | 'serviceScope'
+  | 'serviceMissing'
+  | 'serviceNoProviders'
+  | 'serviceNoConsumers'
+  | 'missingServices'
+  | 'missingServiceNoProvider'
+  | 'startupOrder'
+  | 'startupInstances'
+  | 'startupAll'
+  | 'startupSelf'
+  | 'startupSelected'
+  | 'startupDependency'
+  | 'startupDependent'
+  | 'startupLate'
 
 export const en: Record<PluginTopologyLocaleKey, string> = {
   title: 'Plugin topology',
@@ -127,6 +150,29 @@ export const en: Record<PluginTopologyLocaleKey, string> = {
   closePanel: 'Close panel',
   inspectorServiceTitle: 'Service highlight',
   inspectorServiceHint: 'The canvas is dimmed to edges using this service. Clear the search to exit.',
+  providersTitle: 'Providers',
+  consumersTitle: 'Consumers',
+  providersUnit: 'providers',
+  consumersUnit: 'consumers',
+  serviceInspectorTitle: 'Service inspector',
+  serviceBusFactor: 'bus factor',
+  serviceCritical: 'critical',
+  serviceSingleProvider: 'single provider',
+  serviceHealthy: 'healthy',
+  serviceScope: 'scope',
+  serviceMissing: 'Service not found in the current graph',
+  serviceNoProviders: 'No provider',
+  serviceNoConsumers: 'No consumer',
+  missingServices: 'Missing services',
+  missingServiceNoProvider: 'no provider',
+  startupOrder: 'Startup order',
+  startupInstances: 'instances',
+  startupAll: 'all',
+  startupSelf: 'node',
+  startupSelected: 'selected',
+  startupDependency: 'dependency',
+  startupDependent: 'dependent',
+  startupLate: 'late provider',
 }
 
 export const zh: Record<PluginTopologyLocaleKey, string> = {
@@ -192,4 +238,27 @@ export const zh: Record<PluginTopologyLocaleKey, string> = {
   closePanel: '关闭面板',
   inspectorServiceTitle: '服务高亮',
   inspectorServiceHint: '画布已聚焦到使用该服务的边；清除搜索即可退出。',
+  providersTitle: 'Provider',
+  consumersTitle: 'Consumer',
+  providersUnit: '个 provider',
+  consumersUnit: '个 consumer',
+  serviceInspectorTitle: '服务检查器',
+  serviceBusFactor: 'bus factor',
+  serviceCritical: '关键服务',
+  serviceSingleProvider: '单 provider',
+  serviceHealthy: '健康',
+  serviceScope: '作用域',
+  serviceMissing: '当前图中找不到该服务',
+  serviceNoProviders: '没有 provider',
+  serviceNoConsumers: '没有 consumer',
+  missingServices: '缺失服务',
+  missingServiceNoProvider: '无 provider',
+  startupOrder: '创建顺序',
+  startupInstances: '个实例',
+  startupAll: '全部',
+  startupSelf: '当前节点',
+  startupSelected: '选中',
+  startupDependency: '依赖',
+  startupDependent: '被依赖',
+  startupLate: 'provider 晚于 consumer',
 }

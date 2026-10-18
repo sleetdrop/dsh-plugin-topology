@@ -3,9 +3,12 @@ import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from '
 import { IconChevronDownOutline14, IconCloseOutline16, IconPluginOutline16, IconSearchOutline16 } from './icons.tsx'
 import type { HighlightDirection, NodeSelection } from './stores.ts'
 import type { NeighborInfo, NeighborhoodInfo } from './TopologyGraphView.tsx'
-import type { PluginState, TopologyAnalysis } from '../types.ts'
+import type { PluginNode, PluginState, TopologyAnalysis } from '../types.ts'
 import type { PluginTopologyLocaleKey } from './locales.ts'
 import { buildRows, matchesNeighbor, npmUrl, resolveNode } from './inspector-model.ts'
+import { missingServices } from '../service-model.ts'
+import { buildStartupTimeline } from '../startup-timeline.ts'
+import { StartupTimeline } from './StartupTimeline.tsx'
 import type { RowView } from './inspector-model.ts'
 import css from './NodeInspector.module.css'
 
@@ -41,8 +44,7 @@ export interface NodeInspectorProps {
   readonly onSelectNeighbor: (neighbor: NeighborInfo) => void
   readonly onHoverNeighbor: (neighbor: NeighborInfo | null) => void
   readonly onClose: () => void
-  /** Service query currently highlighted on the canvas, if any. */
-  readonly serviceHighlight: string | null
+  readonly onSelectPlugin: (plugin: PluginNode) => void
   readonly t: (key: PluginTopologyLocaleKey) => string
 }
 
@@ -55,7 +57,7 @@ export interface NodeInspectorProps {
 export function NodeInspector({
   selection, analysis, direction, neighborhood, framedDirection, collapsed,
   onToggleCollapsed, onToggleDirection, onFrameDirection, onSelectNeighbor, onHoverNeighbor, onClose,
-  serviceHighlight, t,
+  onSelectPlugin, t,
 }: NodeInspectorProps): ReactNode {
   const [filter, setFilter] = useState('')
   const outListRef = useRef<HTMLDivElement>(null)
@@ -129,19 +131,18 @@ export function NodeInspector({
         </div>
         <div className={css.emptyState}>
           <IconPluginOutline16 size={22} className={css.emptyIcon} />
-          <span className={css.emptyTitle}>
-            {serviceHighlight !== null ? t('inspectorServiceTitle') : t('inspectorEmptyTitle')}
-          </span>
-          <span className={css.emptyHint}>
-            {serviceHighlight !== null ? t('inspectorServiceHint') : t('inspectorEmptyHint')}
-          </span>
-          {serviceHighlight !== null ? <code className={css.emptyService}>#{serviceHighlight}</code> : null}
+          <span className={css.emptyTitle}>{t('inspectorEmptyTitle')}</span>
+          <span className={css.emptyHint}>{t('inspectorEmptyHint')}</span>
         </div>
       </aside>
     )
   }
 
-  const { node, unresolved } = resolved
+  const { node, unresolved, members } = resolved
+  const memberIds = members.map(member => member.id)
+  const missing = missingServices(analysis, memberIds)
+  // Timeline roles/edges are keyed by the drawn node id (merged `m:N` included).
+  const timeline = buildStartupTimeline(analysis, [node.id])
   const url = npmUrl(node.source)
   const displayLabel = selection.label !== '' ? selection.label : node.label
 
@@ -310,6 +311,23 @@ export function NodeInspector({
           ) : null}
         </div>
       </header>
+      {missing.length > 0 ? (
+        <div className={css.missing}>
+          <div className={css.missingHeader}>
+            <span className={css.missingTitle}>! {t('missingServices')} · {missing.length}</span>
+          </div>
+          <div className={css.missingList}>
+            {missing.map(row => (
+              <div className={css.missingRow} key={`${row.plugin.id}:${row.service}`}>
+                <span className={css.missingName}>{row.service}</span>
+                <span className={stateBadgeClass(row.state)}>{row.state}</span>
+                <span className={css.missingHint}>{t('missingServiceNoProvider')}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <StartupTimeline timeline={timeline} mode="node" onSelectPlugin={onSelectPlugin} t={t} />
       <div className={css.sections}>
         {renderSection('out', t('dependencies'), selection.outCount, outAll, outRows, outListRef, t('emptyDependencies'))}
         {renderSection('in', t('dependents'), selection.inCount, inAll, inRows, inListRef, t('emptyDependents'))}

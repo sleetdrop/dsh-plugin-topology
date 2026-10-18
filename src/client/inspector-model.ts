@@ -54,16 +54,24 @@ export function worstState(states: readonly PluginState[]): PluginState {
  * snapshot node; merged render nodes (`m:N`, several same-named instances drawn
  * as one) are recovered from the ordinals in the rendered label.
  */
+export interface ResolvedNode {
+  readonly node: PluginNode
+  readonly unresolved: number
+  /** Actual snapshot instances behind the drawn node; drives timeline + missing services. */
+  readonly members: readonly PluginNode[]
+}
+
 export function resolveNode(
   dotId: string,
   svgLabel: string,
   analysis: InspectorAnalysis,
-): { node: PluginNode; unresolved: number } {
+): ResolvedNode {
   const direct = analysis.collapsed.nodes.find(node => node.id === dotId)
   if (direct !== undefined) {
     return {
       node: direct,
       unresolved: analysis.graph.unresolved.filter(dep => dep.plugin === dotId).length,
+      members: [direct],
     }
   }
 
@@ -94,7 +102,7 @@ export function resolveNode(
     (total, member) => total + analysis.graph.unresolved.filter(dep => dep.plugin === member.id).length,
     0,
   )
-  return { node, unresolved }
+  return { node, unresolved, members }
 }
 
 /** Resolve and order both directions once per render. */

@@ -14,9 +14,11 @@ export interface SearchPluginHit {
   readonly state: PluginState
 }
 
-/** One service that mediates at least one collapsed dependency edge. */
+/** A raw service node in the bipartite graph (providers/consumers attached). */
 export interface SearchServiceHit {
+  readonly id: string
   readonly service: string
+  readonly scope: string
 }
 
 type Hit =
@@ -25,11 +27,11 @@ type Hit =
 
 export interface TopologySearchProps {
   readonly analysis: TopologyAnalysis
-  /** Service whose edges are currently highlighted, or null. */
-  readonly activeService: string | null
+  /** Selected service id, or null. */
+  readonly activeServiceId: string | null
   readonly onPickPlugin: (hit: SearchPluginHit) => void
-  /** `null` clears the service highlight; the same service toggles it off. */
-  readonly onPickService: (service: string | null) => void
+  /** `null` clears the service inspector; the same service toggles it off. */
+  readonly onPickService: (service: SearchServiceHit | null) => void
   readonly t: (key: PluginTopologyLocaleKey) => string
 }
 
@@ -66,7 +68,7 @@ function idsLabel(ids: readonly string[]): string {
  * clears without closing the panel.
  */
 export function TopologySearch({
-  analysis, activeService, onPickPlugin, onPickService, t,
+  analysis, activeServiceId, onPickPlugin, onPickService, t,
 }: TopologySearchProps): ReactNode {
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -98,11 +100,13 @@ export function TopologySearch({
   }, [analysis])
 
   const services = useMemo<SearchServiceHit[]>(() => {
-    const names = new Set<string>()
-    for (const edge of analysis.collapsed.edges) names.add(edge.service)
-    return [...names]
-      .sort((a, b) => a.localeCompare(b))
-      .map(service => ({ service }))
+    const rows = new Map<string, SearchServiceHit>()
+    for (const node of analysis.graph.nodes) {
+      if (node.kind !== 'service') continue
+      rows.set(node.id, { id: node.id, service: node.label, scope: node.scope })
+    }
+    return [...rows.values()].sort((a, b) =>
+      a.service.localeCompare(b.service) || a.scope.localeCompare(b.scope))
   }, [analysis])
 
   const q = query.trim().toLowerCase()
@@ -148,7 +152,7 @@ export function TopologySearch({
       setQuery('')
       setOpen(false)
     } else {
-      onPickService(activeService === target.hit.service ? null : target.hit.service)
+      onPickService(activeServiceId === target.hit.id ? null : target.hit)
       setOpen(false)
     }
   }
@@ -156,7 +160,7 @@ export function TopologySearch({
   const clear = (): void => {
     setQuery('')
     setOpen(false)
-    if (activeService !== null) onPickService(null)
+    if (activeServiceId !== null) onPickService(null)
   }
 
   // `/` focuses the box from anywhere in the panel (unless already editing).
@@ -198,7 +202,7 @@ export function TopologySearch({
         setOpen(false)
         return
       }
-      if (query !== '' || activeService !== null) {
+      if (query !== '' || activeServiceId !== null) {
         clear()
         return
       }
@@ -210,7 +214,7 @@ export function TopologySearch({
 
   return (
     <div ref={rootRef} className={css.root}>
-      <div className={activeService !== null ? `${css.box} ${css.boxActive}` : css.box}>
+      <div className={activeServiceId !== null ? `${css.box} ${css.boxActive}` : css.box}>
         <IconSearchOutline16 size={12} className={css.icon} />
         <input
           ref={inputRef}
@@ -226,12 +230,12 @@ export function TopologySearch({
             const next = event.target.value
             setQuery(next)
             setOpen(true)
-            if (next === '' && activeService !== null) onPickService(null)
+            if (next === '' && activeServiceId !== null) onPickService(null)
           }}
           onFocus={() => { setOpen(true) }}
           onKeyDown={onKeyDown}
         />
-        {query !== '' || activeService !== null ? (
+        {query !== '' || activeServiceId !== null ? (
           <button type="button" className={css.clear} onClick={clear} aria-label={t('clearSearch')}>
             <IconCloseOutline16 size={10} />
           </button>
@@ -261,10 +265,10 @@ export function TopologySearch({
           {serviceMatches.length > 0 ? <div className={css.group}>{t('searchServices')}</div> : null}
           {serviceMatches.map((hit, offset) => {
             const index = pluginMatches.length + offset
-            const selected = activeService === hit.service
+            const selected = activeServiceId === hit.id
             return (
               <button
-                key={`service:${hit.service}`}
+                key={`service:${hit.id}`}
                 id={`plugin-topology-search-hit-${index}`}
                 type="button"
                 role="option"
@@ -276,6 +280,7 @@ export function TopologySearch({
               >
                 <span className={css.serviceMark} aria-hidden>#</span>
                 <span className={css.label}>{hit.service}</span>
+                <span className={css.meta}>{hit.scope}</span>
                 {selected ? <span className={css.check} aria-hidden>✓</span> : null}
               </button>
             )
