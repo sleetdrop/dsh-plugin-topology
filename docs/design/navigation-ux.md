@@ -75,7 +75,7 @@
 #### A3 全部定位
 
 - section 头部的 `Frame all` 按钮：把“选中 + 当前方向全部目标 + 边 label”的 bbox 框进视口。
-- 和全图 fit 不同，这里允许缩小到 `k < 1`（`fitView` 现在的 `MIN_FIT_K = 1.0` 只适合全图）；下限 0.2–0.25，并在角落提示当前比例。
+- 全图 `fitView` 现在允许缩小到 `MIN_K`（0.05）；聚焦视图仍建议自己的 0.2–0.25 下限，并在角落提示当前比例。
 - 再点一次回到飞行前的 transform；`Esc` 也回。
 - 如果目标组太散、缩到 0.25 仍装不下，保持居中并让 A4 的离屏 chip 接管。
 
@@ -141,7 +141,7 @@
 - **A2 的镜头 API 要上提**：`view` 现在在 `TopologyGraphView` 内部，popover 在它外面，无法直接驱动镜头。建议把 `view` 提到 `TopologyView`（或暴露命令式 `flyTo`），顺带统一 store 与动画；否则只能把跳转意图写进 store 再由 graph view 消费，链路更绕。
 - **A1 的数据**从 SVG 取（`g.node` 的 `title`/文本、`g.edge` 的 `title` + label），状态从 `analysis` 补；现有 `edgeStats`/`resolveNode` 可以抽出复用。这样清单与画面不会脱节。
 - **B 要改三处**：`render` 方法签名（`focus?: string`）、`typert.ts` 的 parameters、`remote-client.ts` 的类型；host 端在 `renderDot` 前按 focus 过滤子图，复用 `mergeByName`。`focus` 用 label 基名或成员 id 列表，**不要用 `m:N`**。
-- **B 的 fit** 不能复用现在的 `fitView`：它的 `MIN_FIT_K = 1.0` 会把高的焦点图裁掉；聚焦视图需要允许 `k < 1`。
+- **B 的 fit** 可以复用 `fitView`（现在允许 `k < 1`），或沿用 0.2–0.25 的聚焦下限。
 - **客户端状态**建议收敛为：`selection`、`direction`、`history[]`、`hover`、`focus`；`selection/history` 放进现有 viewer store，面板重开后可恢复。
 
 ## 5. 建议落地顺序

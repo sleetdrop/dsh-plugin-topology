@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs'
 
 const EXPECTED = [
   '@deepseek-ai/dsh-client-store',
+  '@deepseek-ai/dsh-client-ui-primitives',
   'react',
   'react/jsx-runtime',
 ].sort()

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { buildStartupTimeline, pluginOrdinals } from '../src/startup-timeline.ts'
+import { buildStartupTimeline, matchesTimelineHover, pluginOrdinals } from '../src/startup-timeline.ts'
 import type { PluginNode, PluginState, ServiceNode, TopologyAnalysis, TopologyEdge } from '../src/types.ts'
 
 function plugin(id: string, label: string, state: PluginState = 'ACTIVE'): PluginNode {
@@ -17,10 +17,10 @@ function metric() {
 }
 
 const nodes = [
-  plugin('p:1', 'Root [1]'),
+  plugin('p:1', 'Root[1]'),
   plugin('p:10', 'ToolRuntime [10]'),
   plugin('p:20', 'AgentLoop [20]'),
-  plugin('p:30', 'LateProvider [30]'),
+  plugin('p:30', 'LaterProvider[30]'),
   plugin('m:1', 'SessionStore [48,93]'),
 ]
 const analysis: TopologyAnalysis = {
@@ -61,6 +61,18 @@ describe('pluginOrdinals', () => {
   })
 })
 
+describe('matchesTimelineHover', () => {
+  it('matches merged rows by label and single rows by id', () => {
+    const merged = plugin('m:20', 'client-connection[182,328,329]')
+    assert.equal(matchesTimelineHover(merged, 'm:20', 'client-connection[182,328,329]'), true)
+    assert.equal(matchesTimelineHover(merged, 'p:182', 'client-connection[182,328,329]'), true)
+    assert.equal(matchesTimelineHover(plugin('p:80', 'WebServer[80]'), 'p:80', 'WebServer[80]'), true)
+    assert.equal(matchesTimelineHover(plugin('p:80', 'WebServer'), 'p:81', 'WebServer[80]'), false)
+    assert.equal(matchesTimelineHover(plugin('p:80', 'WebServer[80]'), 'p:81', 'Client[81]'), false)
+    assert.equal(matchesTimelineHover(plugin('p:328', 'client-connection'), 'p:182', 'client-connection'), false)
+  })
+})
+
 describe('buildStartupTimeline', () => {
   it('builds the global range and the selected instances', () => {
     const timeline = buildStartupTimeline(analysis, ['p:20'])
@@ -71,11 +83,51 @@ describe('buildStartupTimeline', () => {
     assert.deepEqual(timeline.selected.map(item => item.plugin.id), ['p:20'])
   })
 
-  it('marks dependencies and late providers', () => {
+  it('marks dependencies', () => {
     const timeline = buildStartupTimeline(analysis, ['p:20'])
     assert.deepEqual(timeline.dependencies.map(item => item.plugin.id), ['p:10', 'p:30'])
-    assert.deepEqual(timeline.lateProviders.map(item => item.plugin.id), ['p:30'])
-    assert.ok(timeline.lateProviders.every(item => item.lateProvider && item.ordinal > 20))
+  })
+
+  it('expands a merged provider group whose members are plain p: nodes', () => {
+    const merged = {
+      ...analysis,
+      graph: {
+        ...analysis.graph,
+        nodes: [
+          plugin('p:130', 'SessionLogDownload'),
+          plugin('p:182', 'client-connection'),
+          plugin('p:328', 'client-connection'),
+          plugin('p:329', 'client-connection'),
+          service('s:root:connection', 'connection'),
+        ],
+        edges: [
+          { kind: 'provides' as const, source: 'p:182', target: 's:root:connection', service: 'connection' },
+        ],
+      },
+      collapsed: {
+        ...analysis.collapsed,
+        nodes: [
+          plugin('p:130', 'SessionLogDownload'),
+          plugin('p:182', 'client-connection'),
+          plugin('p:328', 'client-connection'),
+          plugin('p:329', 'client-connection'),
+        ],
+        edges: [{ source: 'p:130', target: 'p:182', service: 'connection' }],
+      },
+      nodeMetrics: { 'p:130': metric() },
+    }
+    const timeline = buildStartupTimeline(merged, ['p:130'])
+    assert.deepEqual(
+      timeline.dependencies.map(item => [item.plugin.id, item.ordinal]),
+      [['p:182', 182], ['p:182', 328], ['p:182', 329]],
+    )
+    const serviceTimeline = buildStartupTimeline(merged, [], 's:root:connection')
+    // Service mode keeps the exact bipartite endpoints: p:328/p:329 share the
+    // display name but do not provide this service.
+    assert.deepEqual(
+      serviceTimeline.service?.providers.map(item => [item.plugin.id, item.ordinal]),
+      [['p:182', 182]],
+    )
   })
 
   it('marks dependents', () => {

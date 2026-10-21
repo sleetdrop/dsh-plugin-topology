@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { IconChevronDownOutline14, IconDownloadOutline16, OutlineButton } from './icons.tsx'
+import { Button, IconChevronDownOutlineRegular, IconDownloadOutlineRegular, Menu, MenuItemButton } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PluginNode, Rankdir, RenderFormat, TopologyAnalysis } from '../types.ts'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PluginTopologyLocaleKey } from './locales.ts'
@@ -149,11 +149,12 @@ function unresolvedRows(analysis: TopologyAnalysis): readonly UnresolvedRow[] {
   }))
 }
 
-/** The plugin dependency graph view, rendered inside the global footer-action panel. */
+/** The global plugin-topology page: host page chrome, metrics, graph and inspector. */
 export function TopologyView({ useStore, actions, analyze, render, t }: TopologyViewProps): ReactNode {
   const [request, setRequest] = useState(0)
   const [state, setState] = useState<ViewState>({ status: 'loading' })
   const [unresolvedOpen, setUnresolvedOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>(detectTheme)
   const [neighborhood, setNeighborhood] = useState<NeighborhoodInfo | null>(null)
   const [hoveredDotId, setHoveredDotId] = useState<string | null>(null)
@@ -217,7 +218,7 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     setNeighborhood(graph.snapshotNeighbors(selection.key))
   }, [selection?.key, readySvg])
 
-  // A selection restored from a previous panel session may point at a plugin
+  // A selection restored from a previous visit may point at a plugin
   // that no longer exists; drop it instead of showing a dead card.
   useEffect(() => {
     if (selection === null || readySvg === null) return
@@ -349,9 +350,9 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     restoreHistory(history.length - 1)
   }, [history.length, restoreHistory])
 
-  // Selection keyboard: Escape clears first (the panel closes on the next
-  // Escape), Backspace / ⌘[ walks the history back. The panel's own Escape
-  // handler defers while a selection is active, so both listeners coexist.
+  // Selection keyboard: Escape clears the selection, Backspace / ⌘[ walks
+  // the history back. The page has no close-on-Escape behavior of its own, so
+  // these handlers are the only Escape consumers.
   useEffect(() => {
     if (!hasSelection) return
     const onKey = (event: KeyboardEvent): void => {
@@ -373,14 +374,6 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     return () => { window.removeEventListener('keydown', onKey) }
   }, [hasSelection, history.length, onBack, actions])
 
-
-  const onHome = useCallback((): void => {
-    setHoveredDotId(null)
-    setFramedView(null)
-    setServiceSelection(null)
-    actions.clearSelection()
-    graphRef.current?.fitAll()
-  }, [actions])
 
   const onRankdirChange = useCallback((next: Rankdir): void => {
     if (next === rankdir) return
@@ -444,45 +437,14 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
   }, [navigateTo])
 
   return (
-    <div className={css.root} data-plugin-topology-view="">
-      {state.status === 'loading' ? <p className={css.status}>{t('loading')}</p> : null}
-      {state.status === 'error' ? (
-        <div className={css.failure}>
-          <p className={css.status} role="alert">{t('error')}</p>
-          <pre className={css.errorDetail}>{state.message}</pre>
-          <OutlineButton onClick={retry}>{t('retry')}</OutlineButton>
+    <div className={css.root} data-plugin-topology-page="">
+      <header className={css.pageHeader} data-window-drag="">
+        <div className={css.pageHeading}>
+          <h1 className={css.pageTitle}>{t('title')}</h1>
+          <p className={css.pageIntro}>{t('pageIntro')}</p>
         </div>
-      ) : null}
-      {state.status === 'ready' ? (
-        <>
-          <div className={css.toolbar}>
-            <div className={css.summaryGroup}>
-              <div className={css.metricStrip}>
-                {metricRows(state.analysis, t).map(row => (
-                  <span
-                    key={row.label}
-                    className={row.warning === true ? `${css.stat} ${css.statAlert}` : css.stat}
-                  >
-                    <span className={css.statLabel}>{row.label}</span>
-                    {row.expandable === true ? (
-                      <button
-                        type="button"
-                        className={css.statToggle}
-                        aria-expanded={unresolvedOpen}
-                        onClick={() => { setUnresolvedOpen(value => !value) }}
-                      >
-                        <span className={css.statValue}>{row.value}</span>
-                        <IconChevronDownOutline14
-                          className={unresolvedOpen ? `${css.statChevron} ${css.statChevronOpen}` : css.statChevron}
-                        />
-                      </button>
-                    ) : (
-                      <span className={css.statValue}>{row.value}</span>
-                    )}
-                  </span>
-                ))}
-              </div>
-            </div>
+        {state.status === 'ready' ? (
+          <div className={css.pageActions}>
             <TopologySearch
               analysis={state.analysis}
               activeServiceId={serviceSelection?.id ?? null}
@@ -490,148 +452,211 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
               onPickService={pickService}
               t={t}
             />
-            <div className={css.actions}>
-              <div className={css.rankdirGroup} role="group" aria-label={t('rankdirToggle')}>
-                <button
-                  type="button"
-                  className={css.rankdirOption}
-                  aria-pressed={rankdir === 'TB'}
-                  onClick={() => { onRankdirChange('TB') }}
+            <div className={css.rankdirGroup} role="group" aria-label={t('rankdirToggle')}>
+              {(['TB', 'LR'] as const).map(value => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant="ghost"
+                  className={rankdir === value ? css.rankdirActive : undefined}
+                  aria-pressed={rankdir === value}
+                  onClick={() => { onRankdirChange(value) }}
                 >
-                  TD
-                </button>
-                <button
-                  type="button"
-                  className={css.rankdirOption}
-                  aria-pressed={rankdir === 'LR'}
-                  onClick={() => { onRankdirChange('LR') }}
-                >
-                  LR
-                </button>
-              </div>
-              {DOWNLOAD_FORMATS.map(({ format, labelKey }) => (
-                <OutlineButton
-                  key={format}
-                  icon={<IconDownloadOutline16 size={14} />}
-                  onClick={() => { void download(format, rankdir, theme, render) }}
-                >
-                  {t(labelKey)}
-                </OutlineButton>
+                  {value === 'TB' ? 'TD' : 'LR'}
+                </Button>
               ))}
             </div>
+            <Menu
+              open={exportOpen}
+              onClose={() => { setExportOpen(false) }}
+              align="end"
+              portal
+              autoFocus
+              anchor={(
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={<IconDownloadOutlineRegular size={14} />}
+                  aria-haspopup="menu"
+                  aria-expanded={exportOpen}
+                  onClick={() => { setExportOpen(value => !value) }}
+                  onKeyDown={(event) => {
+                    if (!exportOpen && event.key === 'ArrowDown') {
+                      event.preventDefault()
+                      setExportOpen(true)
+                    }
+                  }}
+                >
+                  {t('exportLabel')}
+                  <IconChevronDownOutlineRegular size={12} aria-hidden />
+                </Button>
+              )}
+            >
+              {DOWNLOAD_FORMATS.map(({ format, labelKey }) => (
+                <MenuItemButton
+                  key={format}
+                  icon={<IconDownloadOutlineRegular size={14} />}
+                  onSelect={() => {
+                    setExportOpen(false)
+                    void download(format, rankdir, theme, render)
+                  }}
+                >
+                  {t(labelKey)}
+                </MenuItemButton>
+              ))}
+            </Menu>
           </div>
-          {unresolvedOpen ? (
-            <div className={css.unresolvedPanel}>
-              <div className={css.unresolvedScroll}>
-                <table className={css.unresolvedTable}>
-                  <thead>
-                    <tr>
-                      <th scope="col" className={css.unresolvedColPlugin}>{t('unresolvedPlugin')}</th>
-                      <th scope="col" className={css.unresolvedColState}>{t('unresolvedState')}</th>
-                      <th scope="col">{t('unresolvedService')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {unresolvedRows(state.analysis).map(row => (
-                      <tr key={row.key}>
-                        <td className={css.unresolvedPlugin}>
-                          <button
-                            type="button"
-                            className={css.unresolvedPluginButton}
-                            title={t('locatePlugin')}
-                            onClick={() => { locatePlugin(row) }}
-                          >
-                            {row.plugin}
-                          </button>
-                        </td>
-                        <td className={css.unresolvedState}>{row.state}</td>
-                        <td className={css.unresolvedService}>{row.reasons.join(' · ')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+        ) : null}
+      </header>
+      <div className={css.content}>
+        {state.status === 'loading' ? <p className={css.status}>{t('loading')}</p> : null}
+        {state.status === 'error' ? (
+          <div className={css.failure}>
+            <p className={css.status} role="alert">{t('error')}</p>
+            <pre className={css.errorDetail}>{state.message}</pre>
+            <Button variant="outline" onClick={retry}>{t('retry')}</Button>
+          </div>
+        ) : null}
+        {state.status === 'ready' ? (
+          <>
+            <div className={css.metricStrip}>
+              {metricRows(state.analysis, t).map(row => (
+                <span
+                  key={row.label}
+                  className={row.warning === true ? `${css.stat} ${css.statAlert}` : css.stat}
+                >
+                  <span className={css.statLabel}>{row.label}</span>
+                  {row.expandable === true ? (
+                    <button
+                      type="button"
+                      className={css.statToggle}
+                      aria-expanded={unresolvedOpen}
+                      onClick={() => { setUnresolvedOpen(value => !value) }}
+                    >
+                      <span className={css.statValue}>{row.value}</span>
+                      <IconChevronDownOutlineRegular
+                        size={12}
+                        className={unresolvedOpen ? `${css.statChevron} ${css.statChevronOpen}` : css.statChevron}
+                      />
+                    </button>
+                  ) : (
+                    <span className={css.statValue}>{row.value}</span>
+                  )}
+                </span>
+              ))}
             </div>
-          ) : null}
-          <div className={css.legend} role="note" aria-label={t('legendLabel')}>
-            <span className={css.legendItem}>
-              <span className={`${css.legendSwatch} ${css.legendIsolatedBox}`} aria-hidden />
-              {t('legendIsolated')}
-            </span>
-            <span className={css.legendItem}>
-              <span className={`${css.legendSwatch} ${css.legendUnresolvedBox}`} aria-hidden />
-              {t('legendUnresolved')}
-            </span>
-            <span className={css.legendItem}>
-              <code className={css.legendIdSample}>[42]</code>
-              {t('legendId')}
-            </span>
-          </div>
-          <div className={css.body}>
-            <div className={css.canvasWrap}>
-              <TopologyGraphView
-                ref={graphRef}
-                svg={state.svg}
-                alt={t('title')}
-                height="100%"
-                transform={transform}
-                onTransformChange={onTransformChange}
-                zoomInLabel={t('zoomIn')}
-                zoomOutLabel={t('zoomOut')}
-                resetViewLabel={t('resetView')}
-                zoomLevelLabel={t('zoomLevel')}
-                onNodeClick={onNodeClick}
-                onEmptyClick={onEmptyClick}
-                selectedKey={selection?.key ?? null}
-                selectedDotId={selection?.dotId ?? null}
-                direction={direction}
-                hoveredDotId={hoveredDotId}
-                serviceHighlight={serviceHighlight}
-                offscreenChips={offscreenChips}
-                onChipSelect={selectByKey}
-              />
-              {selection !== null && (
-                <HistoryBreadcrumb
+            {unresolvedOpen ? (
+              <div className={css.unresolvedPanel}>
+                <div className={css.unresolvedScroll}>
+                  <table className={css.unresolvedTable}>
+                    <thead>
+                      <tr>
+                        <th scope="col" className={css.unresolvedColPlugin}>{t('unresolvedPlugin')}</th>
+                        <th scope="col" className={css.unresolvedColState}>{t('unresolvedState')}</th>
+                        <th scope="col">{t('unresolvedService')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {unresolvedRows(state.analysis).map(row => (
+                        <tr key={row.key}>
+                          <td className={css.unresolvedPlugin}>
+                            <button
+                              type="button"
+                              className={css.unresolvedPluginButton}
+                              title={t('locatePlugin')}
+                              onClick={() => { locatePlugin(row) }}
+                            >
+                              {row.plugin}
+                            </button>
+                          </td>
+                          <td className={css.unresolvedState}>{row.state}</td>
+                          <td className={css.unresolvedService}>{row.reasons.join(' · ')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : null}
+            <div className={css.legend} role="note" aria-label={t('legendLabel')}>
+              <span className={css.legendItem}>
+                <span className={`${css.legendSwatch} ${css.legendIsolatedBox}`} aria-hidden />
+                {t('legendIsolated')}
+              </span>
+              <span className={css.legendItem}>
+                <span className={`${css.legendSwatch} ${css.legendUnresolvedBox}`} aria-hidden />
+                {t('legendUnresolved')}
+              </span>
+              <span className={css.legendItem}>
+                <code className={css.legendIdSample}>PluginName[m,n…]</code>
+                {t('legendId')}
+              </span>
+            </div>
+            <div className={css.body}>
+              <div className={css.canvasWrap}>
+                <TopologyGraphView
+                  ref={graphRef}
+                  svg={state.svg}
+                  alt={t('title')}
+                  height="100%"
+                  transform={transform}
+                  onTransformChange={onTransformChange}
+                  zoomInLabel={t('zoomIn')}
+                  zoomOutLabel={t('zoomOut')}
+                  resetViewLabel={t('resetView')}
+                  zoomResetLabel={t('zoomReset')}
+                  onNodeClick={onNodeClick}
+                  onEmptyClick={onEmptyClick}
+                  selectedKey={selection?.key ?? null}
+                  selectedDotId={selection?.dotId ?? null}
+                  direction={direction}
+                  hoveredDotId={hoveredDotId}
+                  serviceHighlight={serviceHighlight}
+                  offscreenChips={offscreenChips}
+                  onChipSelect={selectByKey}
+                />
+                {selection !== null && (
+                  <HistoryBreadcrumb
+                    selection={selection}
+                    history={history}
+                    onBack={onBack}
+                    onRestore={restoreHistory}
+                    t={t}
+                  />
+                )}
+              </div>
+              {serviceSelection === null ? (
+                <NodeInspector
                   selection={selection}
-                  history={history}
-                  onHome={onHome}
-                  onBack={onBack}
-                  onRestore={restoreHistory}
+                  analysis={state.analysis}
+                  direction={direction}
+                  neighborhood={neighborhood}
+                  framedDirection={framedView?.direction ?? null}
+                  collapsed={inspectorCollapsed}
+                  onToggleCollapsed={toggleInspector}
+                  onToggleDirection={toggleDirection}
+                  onFrameDirection={frameDirection}
+                  onSelectNeighbor={selectNeighbor}
+                  onHoverNeighbor={hoverNeighbor}
+                  onClose={closePopover}
+                  onSelectPlugin={selectPlugin}
+                  t={t}
+                />
+              ) : (
+                <ServiceInspector
+                  serviceId={serviceSelection.id}
+                  analysis={state.analysis}
+                  collapsed={inspectorCollapsed}
+                  onToggleCollapsed={toggleInspector}
+                  onClose={() => { pickService(null) }}
+                  onSelectPlugin={selectPlugin}
                   t={t}
                 />
               )}
             </div>
-            {serviceSelection === null ? (
-              <NodeInspector
-                selection={selection}
-                analysis={state.analysis}
-                direction={direction}
-                neighborhood={neighborhood}
-                framedDirection={framedView?.direction ?? null}
-                collapsed={inspectorCollapsed}
-                onToggleCollapsed={toggleInspector}
-                onToggleDirection={toggleDirection}
-                onFrameDirection={frameDirection}
-                onSelectNeighbor={selectNeighbor}
-                onHoverNeighbor={hoverNeighbor}
-                onClose={closePopover}
-                onSelectPlugin={selectPlugin}
-                t={t}
-              />
-            ) : (
-              <ServiceInspector
-                serviceId={serviceSelection.id}
-                analysis={state.analysis}
-                collapsed={inspectorCollapsed}
-                onToggleCollapsed={toggleInspector}
-                onClose={() => { pickService(null) }}
-                onSelectPlugin={selectPlugin}
-                t={t}
-              />
-            )}
-          </div>
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </div>
     </div>
   )
 }

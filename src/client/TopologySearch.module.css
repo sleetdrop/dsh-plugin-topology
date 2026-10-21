@@ -1,23 +1,24 @@
 .root {
   position: relative;
-  flex: 0 1 250px;
-  min-width: 170px;
-  max-width: 300px;
+  flex: 0 1 220px;
+  min-width: 160px;
+  max-width: 280px;
 }
 
 .box {
   display: flex;
   align-items: center;
   gap: 5px;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--dsw-alias-border-l3, #0000001f);
-  border-radius: 6px;
-  background: var(--dsw-alias-bg-layer-2, #ffffff);
+  height: 32px;
+  padding: 0 10px;
+  border: 0.5px solid var(--dsw-alias-border-l4, #00000029);
+  border-radius: var(--dsw-radius-md, 12px);
+  background: var(--dsw-alias-bg-layer-1, #ffffff);
 }
 
 .box:focus-within {
   border-color: var(--dsw-alias-state-business-primary, #4176e6);
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-state-business-primary, #4176e6);
 }
 
 .boxActive {
@@ -27,7 +28,7 @@
 
 .icon {
   flex: none;
-  color: var(--dsw-alias-label-tertiary, #94a3b8);
+  color: var(--dsw-alias-label-tertiary, #81858c);
 }
 
 .input {
@@ -39,12 +40,12 @@
   background: transparent;
   color: var(--dsw-alias-label-primary, #0f1115);
   font-family: inherit;
-  font-size: 12px;
-  line-height: 1;
+  font-size: 13px;
+  line-height: 18px;
 }
 
 .input::placeholder {
-  color: var(--dsw-alias-label-tertiary, #94a3b8);
+  color: var(--dsw-alias-label-tertiary, #81858c);
 }
 
 .clear {
@@ -52,13 +53,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--dsw-radius-xs, 4px);
   background: transparent;
-  color: var(--dsw-alias-label-tertiary, #94a3b8);
+  color: var(--dsw-alias-label-tertiary, #81858c);
   cursor: pointer;
 }
 
@@ -77,19 +78,19 @@
   max-height: 340px;
   overflow-y: auto;
   padding: 4px;
-  border: 1px solid var(--dsw-alias-border-l3, #0000001f);
-  border-radius: 8px;
+  border: 0.5px solid var(--dsw-alias-border-l3, #0000001f);
+  border-radius: var(--dsw-radius-md, 12px);
   background: var(--dsw-alias-bg-layer-2, #ffffff);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.16);
+  box-shadow: var(--dsw-elevation-panel);
 }
 
 .group {
-  padding: 5px 8px 2px;
-  font-size: 9.5px;
+  padding: 6px 8px 2px;
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--dsw-alias-label-tertiary, #94a3b8);
+  color: var(--dsw-alias-label-tertiary, #81858c);
 }
 
 .hit {
@@ -97,9 +98,9 @@
   align-items: center;
   gap: 6px;
   width: 100%;
-  padding: 5px 8px;
+  padding: 6px 8px;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--dsw-radius-sm, 8px);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -117,7 +118,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--dsw-alias-label-tertiary, #94a3b8);
+  background: var(--dsw-alias-label-tertiary, #81858c);
 }
 
 .dotActive {
@@ -128,19 +129,23 @@
   background: var(--dsw-alias-state-error-primary, #ec1313);
 }
 
+.dotLoading {
+  background: var(--dsw-alias-state-business-primary, #4176e6);
+}
+
 .dotPending {
-  background: var(--dsw-alias-state-warn-primary, #d97706);
+  background: var(--dsw-alias-label-tertiary, #81858c);
 }
 
 .dotOther {
-  background: var(--dsw-alias-label-tertiary, #94a3b8);
+  background: var(--dsw-alias-label-tertiary, #81858c);
 }
 
 .label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--dsw-alias-label-primary, #0f1115);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -149,15 +154,15 @@
 .meta {
   flex: none;
   font-family: var(--ds-font-family-code, monospace);
-  font-size: 9.5px;
-  color: var(--dsw-alias-label-tertiary, #94a3b8);
+  font-size: 10.5px;
+  color: var(--dsw-alias-label-tertiary, #81858c);
 }
 
 .serviceMark {
   flex: none;
   font-family: var(--ds-font-family-code, monospace);
-  font-size: 10px;
-  color: var(--dsw-alias-label-tertiary, #94a3b8);
+  font-size: 10.5px;
+  color: var(--dsw-alias-label-tertiary, #81858c);
 }
 
 .check {
@@ -168,6 +173,6 @@
 
 .empty {
   padding: 8px;
-  font-size: 11px;
-  color: var(--dsw-alias-label-tertiary, #94a3b8);
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary, #81858c);
 }

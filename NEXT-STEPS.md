@@ -3,11 +3,21 @@
 Planned directions for the plugin topology renderer. None of these are
 committed API; they are design notes for future releases.
 
+## 0.8.0 — global page + static startup strip (done)
+
+The topology is now a global main page with the shared DSH layout and
+primitives. The startup strip is a static 2px colour rug: the earlier
+continuous heat-strip idea was removed because a run creates one fiber per
+ordinal, so the density gradient was flat. The inspector's text rows drive the
+hover pulse. Spec:
+[`0.8-ui-page.md`](https://github.com/sleetdrop/dsh-plugin-topology/blob/main/docs/design/0.8-ui-page.md).
+
 ## 0.7.0 — service inspector + startup timeline
 
 Focused on the loaded-only case: service providers/consumers, bus factor,
-critical/single-provider services, missing services per plugin, and a
-continuous startup-order heat strip. Spec:
+critical/single-provider services, missing services per plugin. The 0.7 design
+originally proposed a continuous heat strip; 0.8 replaced it with the static
+rug above. Spec:
 [`0.7-service-inspector.md`](https://github.com/sleetdrop/dsh-plugin-topology/blob/main/docs/design/0.7-service-inspector.md).
 
 Graph-theory follow-ups (impact, SPOF, DAG layers, reduction, diff) are 0.7.x.
@@ -26,7 +36,7 @@ unresolved dependencies (red stroke). Color nodes by state instead:
 This surfaces the most common diagnostic question — "which plugins did not
 load successfully" — at a glance.
 
-Worth noting the boundary: when DSH cannot boot at all, this panel cannot
+Worth noting the boundary: when DSH cannot boot at all, this page cannot
 render either, so pre-boot diagnosis belongs to a CLI tool. State coloring
 targets the other case — DSH runs, but some plugin misbehaved.
 

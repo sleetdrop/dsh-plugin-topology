@@ -27,31 +27,52 @@ export interface DotPalette {
   readonly clusterStroke: string
 }
 
+/*
+ * Resolved theme values: a Graphviz SVG (and its downloaded copy) cannot read
+ * CSS variables, so each literal mirrors a token in the pinned
+ * @deepseek-ai/dsh-client-ui-theme. Keep this table aligned with the light and
+ * dark token values when the theme moves.
+ */
 export const LIGHT_PALETTE: DotPalette = {
   canvas: '#ffffff',
   nodeFill: '#ffffff',
-  nodeStroke: '#e2e8f0',
-  nodeFont: '#334155',
-  edgeStroke: '#e2e8f0',
-  edgeFont: '#94a3b8',
+  /** `--dsw-static-neutral-bluish-300`. */
+  nodeStroke: '#cfd3d6',
+  /** `--dsw-alias-label-primary`. */
+  nodeFont: '#0f1115',
+  /** `--dsw-static-neutral-bluish-300`. */
+  edgeStroke: '#cfd3d6',
+  /** Light `--dsw-alias-label-secondary`; edge labels must stay legible. */
+  edgeFont: '#61666b',
+  /** `--dsw-alias-state-error-primary`. */
   errorStroke: '#ec1313',
   errorFont: '#ec1313',
-  clusterFill: '#f8fafc',
-  clusterStroke: '#94a3b8',
+  /** `--dsw-static-neutral-bluish-50`. */
+  clusterFill: '#f9fafb',
+  /** `--dsw-alias-label-tertiary`. */
+  clusterStroke: '#81858c',
 }
 
 export const DARK_PALETTE: DotPalette = {
   /** DeepSeek Harness dark `--dsw-alias-bg-layer-1`. */
   canvas: '#232324',
+  /** Dark `--dsw-alias-bg-layer-2`. */
   nodeFill: '#2c2c2e',
-  nodeStroke: '#ffffff29',
-  nodeFont: '#e2e8f0',
-  edgeStroke: '#ffffff1f',
-  edgeFont: '#81858c',
+  /** Dark `--dsw-alias-border-l4` (20% white). */
+  nodeStroke: '#ffffff33',
+  /** Dark `--dsw-alias-label-primary`. */
+  nodeFont: '#f9fafb',
+  /** Dark `--dsw-alias-border-l4` (20% white). */
+  edgeStroke: '#ffffff33',
+  /** Dark `--dsw-alias-label-secondary`; edge labels must stay legible. */
+  edgeFont: '#cfd3d6',
+  /** Dark `--dsw-alias-state-error-primary`. */
   errorStroke: '#f25a5a',
   errorFont: '#f25a5a',
+  /** Dark `--dsw-alias-bg-base`. */
   clusterFill: '#151517',
-  clusterStroke: '#81858c',
+  /** Dark `--dsw-alias-label-tertiary`. */
+  clusterStroke: '#adb2b8',
 }
 
 /** One plugin node with its metrics in the node-link document. */
@@ -221,10 +242,10 @@ function mergeByName(nodes: readonly PluginNode[], unresolvedIds: ReadonlySet<st
   return { nodes: out, byOriginalId }
 }
 
-/** Display label for a (possibly merged) node: `name [1,9,23]`, capped for many ids. */
+/** Display label for a (possibly merged) node: `name[1,9,23]`, capped for many ids. */
 function mergedLabel(node: MergedNode): string {
   const ids = node.ids.length <= 6 ? node.ids.join(',') : `${node.ids.slice(0, 6).join(',')},…`
-  return `${escapeDot(node.label)} [${ids}]`
+  return `${escapeDot(node.label)}[${ids}]`
 }
 
 /** Plugins with no incident dependency edge (and not the synthetic root). */
@@ -261,9 +282,9 @@ export function renderIsolatedDot(analysis: TopologyAnalysis, rankdir: Rankdir, 
   return `${lines.join('\n')}\n`
 }
 
-/** Per-instance label: `name [id]` (no merging — used by the complete DOT). */
+/** Per-instance label: `name[id]` (no merging — used by the complete DOT). */
 function instanceLabel(node: PluginNode): string {
-  return `${escapeDot(node.label)} [${escapeDot(node.id.replace(/^p:/, ''))}]`
+  return `${escapeDot(node.label)}[${escapeDot(node.id.replace(/^p:/, ''))}]`
 }
 
 /**

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
-import { IconCloseOutline16, IconSearchOutline16 } from './icons.tsx'
+import { IconCloseOutlineRegular, IconSearchOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PluginState, TopologyAnalysis } from '../types.ts'
 import type { PluginTopologyLocaleKey } from './locales.ts'
 import { useDismissOnOutsidePointer } from './useDismissOnOutsidePointer.ts'
@@ -51,6 +51,7 @@ function worseState(a: PluginState, b: PluginState): PluginState {
 function stateDotClass(state: PluginState): string {
   if (state === 'ACTIVE') return `${css.dot} ${css.dotActive}`
   if (state === 'FAILED') return `${css.dot} ${css.dotFailed}`
+  if (state === 'LOADING' || state === 'UNLOADING') return `${css.dot} ${css.dotLoading}`
   if (state === 'PENDING') return `${css.dot} ${css.dotPending}`
   return `${css.dot} ${css.dotOther}`
 }
@@ -65,7 +66,7 @@ function idsLabel(ids: readonly string[]): string {
  * Toolbar search over plugins and services. Plugin hits select + fly to the
  * drawn node (merged groups included); service hits highlight every edge that
  * uses that service. `/` focuses the box, arrows move, Enter opens, Escape
- * clears without closing the panel.
+ * clears the query without leaving the page.
  */
 export function TopologySearch({
   analysis, activeServiceId, onPickPlugin, onPickService, t,
@@ -163,7 +164,7 @@ export function TopologySearch({
     if (activeServiceId !== null) onPickService(null)
   }
 
-  // `/` focuses the box from anywhere in the panel (unless already editing).
+  // `/` focuses the box from anywhere on the page (unless already editing).
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return
@@ -215,7 +216,7 @@ export function TopologySearch({
   return (
     <div ref={rootRef} className={css.root}>
       <div className={activeServiceId !== null ? `${css.box} ${css.boxActive}` : css.box}>
-        <IconSearchOutline16 size={12} className={css.icon} />
+        <IconSearchOutlineRegular size={12} className={css.icon} />
         <input
           ref={inputRef}
           className={css.input}
@@ -237,7 +238,7 @@ export function TopologySearch({
         />
         {query !== '' || activeServiceId !== null ? (
           <button type="button" className={css.clear} onClick={clear} aria-label={t('clearSearch')}>
-            <IconCloseOutline16 size={10} />
+            <IconCloseOutlineRegular size={12} />
           </button>
         ) : null}
       </div>
