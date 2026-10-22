@@ -158,7 +158,7 @@ cannot be smoke-tested from the repository copy, because the desktop profile
 installs from npm. Publish it as a prerelease of the next patch instead:
 
 ```sh
-# package.json "version": "0.8.1-test.0"
+# package.json "version": "0.9.0-test.0"
 ./scripts/publish.sh          # prerelease → --tag next, `latest` untouched
 ```
 
@@ -167,7 +167,7 @@ install the exact version:
 
 ```sh
 cd ~/.dsh/profiles/desktop
-pnpm add @sleetdrop/dsh-plugin-topology@0.8.1-test.0 --save-exact
+pnpm add @sleetdrop/dsh-plugin-topology@0.9.0-test.0 --save-exact
 ```
 
 pnpm's `minimumReleaseAge` (24 h in the desktop profile) refuses a build that

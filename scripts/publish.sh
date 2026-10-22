@@ -42,7 +42,7 @@ fi
 WHOAMI="$(npm whoami --registry "$REGISTRY")"
 VERSION="$(node -e "console.log(require('./package.json').version)")"
 
-# 3. Dist-tag. A prerelease (`0.8.1-test.0`) is a test build: it must never
+# 3. Dist-tag. A prerelease (`0.9.0-test.0`) is a test build: it must never
 #    move `latest`, or every user's next install would pick up an unverified
 #    artifact. Default it to `next`; an explicit argument overrides (e.g.
 #    `./scripts/publish.sh latest` once the smoke test passes).
