@@ -1,5 +1,5 @@
 # The plugin-topology bundle patch. Applied when a profile lists this bundle.
-# The plugin-topology host service is the package default export; the graph.render
+# The plugin-topology host service is the package default export; the graph_render
 # tool is the ./tool subpath default export; the browser surface is the dsh.client
 # row the bundle declares (see package.json dsh.client).
 

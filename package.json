@@ -1,7 +1,7 @@
 {
   "name": "@sleetdrop/dsh-plugin-topology",
   "version": "0.8.0",
-  "description": "Plugin dependency graph inspector for DeepSeek Harness: a host service that snapshots the live Cordis plugin fiber tree, a graph.render tool for the model, and a browser page that renders the plugin/service topology as a zoomable graph with metrics, legend, and unresolved-dependency table.",
+  "description": "Plugin dependency graph inspector for DeepSeek Harness: a host service that snapshots the live Cordis plugin fiber tree, a graph_render tool for the model, and a browser page that renders the plugin/service topology as a zoomable graph with metrics, legend, and unresolved-dependency table.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -76,7 +76,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsc -p tsconfig.test.json && node --test 'lib-test/test/*.test.js'",
     "check": "pnpm run typecheck && pnpm run build && pnpm run test && pnpm run check:drift",
-    "check:drift": "node scripts/check-lib-orphans.mjs && node scripts/check-client-externals.mjs && node scripts/check-css-tokens.mjs && node scripts/check-graph-classes.mjs && node scripts/check-pack.mjs && node scripts/check-compat.mjs",
+    "check:drift": "node scripts/check-lib-orphans.mjs && node scripts/check-client-externals.mjs && node scripts/check-css-tokens.mjs && node scripts/check-graph-classes.mjs && node scripts/check-tool-names.mjs && node scripts/check-pack.mjs && node scripts/check-compat.mjs",
     "check:lib": "node scripts/check-lib-orphans.mjs",
     "check:externals": "node scripts/check-client-externals.mjs",
     "check:tokens": "node scripts/check-css-tokens.mjs",
@@ -84,7 +84,8 @@
     "check:pack": "node scripts/check-pack.mjs",
     "check:compat": "node scripts/check-compat.mjs",
     "prepare": "pnpm run build",
-    "prepublishOnly": "pnpm check"
+    "prepublishOnly": "pnpm check",
+    "check:tool-names": "node scripts/check-tool-names.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",

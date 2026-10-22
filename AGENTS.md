@@ -9,7 +9,7 @@ keep it short and actionable. Full process detail lives in
 ## What this is
 
 `@sleetdrop/dsh-plugin-topology` — an out-of-tree DeepSeek Harness plugin: a
-Cordis host service that snapshots the live plugin fiber tree, a `graph.render`
+Cordis host service that snapshots the live plugin fiber tree, a `graph_render`
 model tool, and a global browser page that draws the topology.
 
 It tracks DSH `rc` releases on its **own independent semver**. The mapping
@@ -70,7 +70,8 @@ merged through a PR are deleted automatically. Do not try
 
 `pnpm check` is the local equivalent of CI and must be green before reporting a
 change done: typecheck → build → test → orphaned `lib/` → client externals →
-DSH token audit → pack payload → README/RELEASING/peer compatibility. CI
+DSH token audit → pack payload → README/RELEASING/peer compatibility →
+provider-safe tool names. CI
 (`.github/workflows/ci.yml`) runs the same on Node 22 and 24 and is the
 authoritative gate; local green is necessary, not sufficient. Do not weaken a
 check to make a change pass — fix the drift or update the documented baseline.

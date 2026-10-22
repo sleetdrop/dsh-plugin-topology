@@ -11,7 +11,7 @@ One installable bundle ships three surfaces:
 - **host service** (`@sleetdrop/dsh-plugin-topology`): a `TypertRemoteService`
   exposing `analyze()` and `render()` over the gateway.
 - **host tool** (`@sleetdrop/dsh-plugin-topology/tool`): the model-facing
-  `graph.render` tool, registering on `ctx.tools`.
+  `graph_render` tool, registering on `ctx.tools`.
 - **browser surface** (`dsh.client`): a global page reachable from the sidebar's
   panel list that renders the graph, metrics, legend, unresolved-dependency log,
   and pan/zoom + format downloads.
@@ -28,14 +28,14 @@ cd dsh-plugin-topology && pnpm install && pnpm build
 dsh plugin --profile <name> add ./dsh-plugin-topology
 ```
 
-The bundle patch mounts the host service row and the `graph.render` tool row.
+The bundle patch mounts the host service row and the `graph_render` tool row.
 The tool row can live in the profile patch instead — a deployment that prefers
 per-session placement may remove it from `cordis.patch.yml` and add it to its
 agent preset.
 
 ## Model Experience
 
-The `graph.render` tool serializes the running instance's plugin dependency
+The `graph_render` tool serializes the running instance's plugin dependency
 graph as one document:
 
 - `json` — a NetworkX-compatible node-link graph whose nodes carry graph-theory
