@@ -140,6 +140,10 @@ async function readMetrics() {
 
 // Compositor layer tracking: a mass opacity animation promotes one layer per
 // element, which is both a memory cliff and a whole-window flash risk.
+// `t0` is the reference for every phase and layer timestamp, so it must exist
+// before any listener can fire (an event during screencast startup would
+// otherwise hit the temporal dead zone).
+const t0 = Date.now() / 1000
 const layerEvents = []
 const enabled = await page.send('LayerTree.enable')
 layerEvents.push({ t: 0, count: (enabled?.layers ?? []).length })
@@ -147,7 +151,6 @@ page.on('LayerTree.layerTreeDidChange', (params) => {
   layerEvents.push({ t: Date.now() / 1000 - t0, count: (params.layers ?? []).length })
 })
 const screencast = await page.screencast({ width: 1440, height: 900 })
-const t0 = Date.now() / 1000
 
 /**
  * Find a node whose center is comfortably inside the canvas and left of the
