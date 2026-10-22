@@ -35,7 +35,9 @@ export interface DotPalette {
  */
 export const LIGHT_PALETTE: DotPalette = {
   canvas: '#ffffff',
-  nodeFill: '#ffffff',
+  /** `--dsw-static-neutral-bluish-75`: a hair off the canvas so a node reads as
+   * a filled pill, not a bare outline. */
+  nodeFill: '#f1f3f5',
   /** `--dsw-static-neutral-bluish-300`. */
   nodeStroke: '#cfd3d6',
   /** `--dsw-alias-label-primary`. */

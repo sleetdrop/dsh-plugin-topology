@@ -138,7 +138,14 @@
   opacity: 0.18;
 }
 
-/* One shared transition so hover, selection, and highlight changes do not pop. */
+/* One shared transition so hover, selection, and highlight changes do not pop.
+ *
+ * `opacity` is deliberately absent. Dimming a selection recedes ~440 SVG groups
+ * at once, and Chromium promotes every element that runs an opacity animation to
+ * its own composited layer: CDP `LayerTree` measured 4 → 455 layers for the
+ * 120 ms fade, then back to 6. Hundreds of transient render surfaces make the
+ * transparent, vibrancy-backed desktop window flash for a frame. The paint
+ * properties below still animate; the mass dim/recede now lands instantly. */
 .graphImg :global(.topo-hover-node),
 .graphImg :global(.topo-selected-node),
 .graphImg :global(.topo-hl-node),
@@ -148,7 +155,7 @@
 .graphImg :global(.topo-isolate-edge),
 .graphImg :global(.topo-hl-weak),
 .graphImg :global(.topo-dimmed) {
-  transition-property: opacity, stroke, stroke-opacity, stroke-width, fill, fill-opacity;
+  transition-property: stroke, stroke-opacity, stroke-width, fill, fill-opacity;
   transition-duration: 0.12s;
   transition-timing-function: ease;
 }

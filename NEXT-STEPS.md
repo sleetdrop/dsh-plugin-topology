@@ -50,7 +50,7 @@ touches that area:
 
 - client component/a11y/visual smoke (Playwright) and a coverage floor;
 - lint/format as a mechanical commit;
-- `graph.render` contract/golden evals;
+- `graph_render` contract/golden evals;
 - DSH-version compatibility matrix;
 - security/dependency scanning and a release-preflight artifact.
 

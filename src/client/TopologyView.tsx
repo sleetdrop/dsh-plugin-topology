@@ -17,6 +17,7 @@ import { ServiceInspector } from './ServiceInspector.tsx'
 import { HistoryBreadcrumb } from './HistoryBreadcrumb.tsx'
 import { TopologySearch, type SearchPluginHit, type SearchServiceHit } from './TopologySearch.tsx'
 import type { NodeSelection, TopologyTransform, ViewerActionBindings, ViewerState } from './stores.ts'
+import { detectTheme } from './theme.ts'
 import css from './TopologyView.module.css'
 
 /** Registration-side injected callbacks used by the view. */
@@ -49,30 +50,6 @@ const DOWNLOAD_FORMATS: ReadonlyArray<{ format: RenderFormat; labelKey: 'downloa
   { format: 'dot', labelKey: 'downloadDot' },
   { format: 'json', labelKey: 'downloadJson' },
 ]
-
-/** Detect the current DSH theme from the document root's data attribute or class. */
-function detectTheme(): 'light' | 'dark' {
-  const root = document.documentElement
-  // DSH sets data-theme or a class on <html>; check common patterns.
-  const dataTheme = root.getAttribute('data-theme')
-  if (dataTheme === 'dark') return 'dark'
-  if (dataTheme === 'light') return 'light'
-  // Fallback: check computed background color luminance of <body> (more reliable than <html>).
-  const bg = getComputedStyle(document.body).backgroundColor
-  if (bg !== '' && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
-    const match = bg.match(/(\d+)/g)
-    if (match !== null && match.length >= 3) {
-      const luminance = (parseInt(match[0] ?? '255') * 299 + parseInt(match[1] ?? '255') * 587 + parseInt(match[2] ?? '255') * 114) / 1000
-      return luminance < 128 ? 'dark' : 'light'
-    }
-  }
-  // Also check the resolved color-scheme via matchMedia.
-  if (typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches) {
-    // Only trust this if DSH preference is 'system'; otherwise DSH overrides it.
-    // Since we can't read DSH's preference here, default to light (safer for most users).
-  }
-  return 'light'
-}
 
 /**
  * The health-oriented metrics: scale, the broken-dependency signal, and the
@@ -178,13 +155,22 @@ export function TopologyView({ useStore, actions, analyze, render, t }: Topology
     return rows.map(row => ({ key: row.key, label: row.label, direction }))
   }, [direction, neighborhood])
 
-  // Watch for theme changes via MutationObserver on <html> attributes.
+  // Watch the theme carriers: `html[data-ds-theme-source]` for the preference
+  // and `body[data-ds-dark-theme]` for the resolved answer (the desktop body is
+  // transparent, so the background colour alone cannot answer).
   useEffect(() => {
     const observer = new MutationObserver(() => {
       const next = detectTheme()
       setTheme(prev => prev === next ? prev : next)
     })
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] })
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'data-ds-theme-source', 'class', 'style'],
+    })
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['data-ds-dark-theme', 'class', 'style'],
+    })
     return () => { observer.disconnect() }
   }, [])
 

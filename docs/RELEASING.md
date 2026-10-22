@@ -151,6 +151,35 @@ failure surfaces much later as a confusing `E404 Not Found` on `PUT`.
 npm prompts for your OTP during login and/or publish — enter it in the terminal
 (or approve the push on your device).
 
+### 7b. Test builds — publish before the smoke test, under `next`
+
+A fix that only the desktop can confirm (window compositing, vibrancy, focus)
+cannot be smoke-tested from the repository copy, because the desktop profile
+installs from npm. Publish it as a prerelease of the next patch instead:
+
+```sh
+# package.json "version": "0.9.0-test.0"
+./scripts/publish.sh          # prerelease → --tag next, `latest` untouched
+```
+
+`latest` keeps serving the last validated release, and the desktop profile can
+install the exact version:
+
+```sh
+cd ~/.dsh/profiles/desktop
+pnpm add @sleetdrop/dsh-plugin-topology@0.9.0-test.0 --save-exact
+```
+
+pnpm's `minimumReleaseAge` (24 h in the desktop profile) refuses a build that
+young, so add the exact version to `minimumReleaseAgeExclude` in the profile's
+`pnpm-workspace.yaml` first. After the user confirms the smoke test, set
+`"version": "0.8.1"`, add the README/RELEASING rows, run `pnpm check`, and
+publish the stable version with `./scripts/publish.sh latest`; then tag.
+
+A prerelease is exempt from the README-row check in `check-compat` (the row is
+for released versions), but it must still agree with the last released row on
+every DSH peer.
+
 ## Verification after publishing
 
 ```sh
@@ -201,3 +230,4 @@ each was validated against (Git tags carry a `v` prefix, npm versions do not).
 | `0.6.0` | `0.2.0-rc.2` | Right-side inspector + breadcrumb/chips/search; quality gates (CI, drift checks, locale/inspector tests); no DSH source changes |
 | `0.7.0` | `0.2.1-rc.2` | Service inspector, missing services, startup timeline; live topology doctor (loaded-only); DSH 0.2.1-rc.2 peer refresh |
 | `0.8.0` | `0.2.1-rc.2` | Global main page on DSH layout/primitives; static 2px startup strip; row-driven hover pulse; merged groups; no DSH peer change |
+| `0.9.0` | `0.2.1-rc.2` | Breaking: tool renamed `graph_render` (dotted name rejected by the API, broke every session); mass opacity transition removed (desktop flash); theme detection reads `data-ds-dark-theme`; subtle node fill |

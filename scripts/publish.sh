@@ -42,10 +42,30 @@ fi
 WHOAMI="$(npm whoami --registry "$REGISTRY")"
 VERSION="$(node -e "console.log(require('./package.json').version)")"
 
-echo "Publishing $PACKAGE@$VERSION as $WHOAMI ..."
-pnpm publish --access public --registry "$REGISTRY"
+# 3. Dist-tag. A prerelease (`0.9.0-test.0`) is a test build: it must never
+#    move `latest`, or every user's next install would pick up an unverified
+#    artifact. Default it to `next`; an explicit argument overrides (e.g.
+#    `./scripts/publish.sh latest` once the smoke test passes).
+TAG="${1:-}"
+if [ -z "$TAG" ]; then
+  case "$VERSION" in
+    *-*) TAG=next ;;
+    *) TAG=latest ;;
+  esac
+fi
+if [ "$TAG" != "latest" ] && [ "$TAG" != "next" ]; then
+  echo "error: unsupported dist-tag '$TAG' (expected latest or next)" >&2
+  exit 1
+fi
+if [ "$TAG" = "latest" ] && [ "$VERSION" != "${VERSION%%-*}" ]; then
+  echo "error: refusing to publish prerelease $VERSION to latest — publish it to next first" >&2
+  exit 1
+fi
 
-# 3. Verify the registry reports the new version on latest.
+echo "Publishing $PACKAGE@$VERSION as $WHOAMI (dist-tag: $TAG) ..."
+pnpm publish --access public --registry "$REGISTRY" --tag "$TAG"
+
+# 4. Verify the registry reports the new version on its dist-tag.
 echo "Verifying $PACKAGE dist-tags ..."
 sleep 2
 curl -s "${REGISTRY}@sleetdrop%2fdsh-plugin-topology" \

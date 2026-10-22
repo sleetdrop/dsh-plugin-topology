@@ -11,7 +11,7 @@ One installable bundle ships three surfaces:
 - **host service** (`@sleetdrop/dsh-plugin-topology`): a `TypertRemoteService`
   exposing `analyze()` and `render()` over the gateway.
 - **host tool** (`@sleetdrop/dsh-plugin-topology/tool`): the model-facing
-  `graph.render` tool, registering on `ctx.tools`.
+  `graph_render` tool, registering on `ctx.tools`.
 - **browser surface** (`dsh.client`): a global page reachable from the sidebar's
   panel list that renders the graph, metrics, legend, unresolved-dependency log,
   and pan/zoom + format downloads.
@@ -28,14 +28,14 @@ cd dsh-plugin-topology && pnpm install && pnpm build
 dsh plugin --profile <name> add ./dsh-plugin-topology
 ```
 
-The bundle patch mounts the host service row and the `graph.render` tool row.
+The bundle patch mounts the host service row and the `graph_render` tool row.
 The tool row can live in the profile patch instead — a deployment that prefers
 per-session placement may remove it from `cordis.patch.yml` and add it to its
 agent preset.
 
 ## Model Experience
 
-The `graph.render` tool serializes the running instance's plugin dependency
+The `graph_render` tool serializes the running instance's plugin dependency
 graph as one document:
 
 - `json` — a NetworkX-compatible node-link graph whose nodes carry graph-theory
@@ -163,6 +163,7 @@ releases only and skips the fast-moving `alpha` line.
 | `0.6.0` | `0.2.0-rc.2` | Right-side inspector (collapsible, independently scrolling dependency/dependent sections, local filter, proportional heights), breadcrumb history, off-screen chips, plugin/service search, arrow-based direction. Quality gates: CI, drift checks, locale/inspector-model tests. No DSH source changes. |
 | `0.7.0` | `0.2.1-rc.2` | Service inspector, missing services, startup timeline; live topology doctor (loaded-only). DSH peer refresh to 0.2.1-rc.2; quality gates unchanged. |
 | `0.8.0` | `0.2.1-rc.2` | Global topology page on the DSH layout/primitives; official controls/icons; semantic tokens; inspector/search/export refresh; static 2px startup timeline with row-driven hover pulses, selected blink and merged-group expansion. No DSH peer change. |
+| `0.9.0` | `0.2.1-rc.2` | Breaking: the model tool is renamed `graph_render` — the dotted `graph.render` was rejected by the provider (`INVALID_REQUEST`) and broke every session. Also stops the mass opacity transition that flashed the desktop window, and gives each node a subtle fill (`#f1f3f5`) so it reads as a pill instead of a bare outline. |
 
 ## Known Limitations
 

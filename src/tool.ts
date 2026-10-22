@@ -1,7 +1,11 @@
 /**
  * Model-facing Consumer of the `pluginTopology` capability seam: the
- * `graph.render` tool serializes the runtime plugin dependency graph for the
+ * `graph_render` tool serializes the runtime plugin dependency graph for the
  * agent to inspect or write out as a shareable artifact.
+ *
+ * The name must match the provider's function-name grammar
+ * (`^[a-zA-Z0-9_-]+$`): the adapter forwards it verbatim, so a dotted name
+ * (`graph.render`) makes every request fail with INVALID_REQUEST.
  * @module @sleetdrop/dsh-plugin-topology/tool
  */
 
@@ -28,12 +32,12 @@ const DESCRIPTION = 'Render the dependency graph of the running DSH instance: '
   + 'tool to produce a shareable artifact.'
 
 /**
- * Register the `graph.render` tool on `ctx.tools`.
+ * Register the `graph_render` tool on `ctx.tools`.
  * @param ctx - registrant context carrying the tool registry and the topology service.
  */
 export function apply(ctx: Context): void {
   ctx.tools.register(defineTool({
-    name: 'graph.render',
+    name: 'graph_render',
     description: DESCRIPTION,
     parameters: {
       format: {

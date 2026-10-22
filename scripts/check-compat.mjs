@@ -20,12 +20,16 @@ const tableRow = /^\| `([^`]+)` \| `([^`]+)` \|/gm
 const readmeRows = [...readme.matchAll(tableRow)].map(match => ({ version: match[1], dsh: match[2] }))
 const releasingRows = [...releasing.matchAll(tableRow)].map(match => ({ version: match[1], dsh: match[2] }))
 const latest = readmeRows.at(-1)
+// Test builds (`0.8.1-test.0`) are published under the `next` tag before the
+// release exists in the table. They still have to agree with the last released
+// row on peers; only the version equality is deferred to the stable release.
+const prerelease = pkg.version.includes('-')
 
 if (latest === undefined) {
   console.error('check-compat: could not parse the README compatibility table')
   process.exit(1)
 }
-if (latest.version !== pkg.version) {
+if (!prerelease && latest.version !== pkg.version) {
   console.error(`check-compat: README latest row is ${latest.version}, package.json is ${pkg.version}`)
   process.exit(1)
 }
@@ -35,11 +39,11 @@ if (latest.dsh !== current[1]) {
 }
 
 const releaseRow = releasingRows.find(row => row.version === pkg.version)
-if (releaseRow === undefined) {
+if (!prerelease && releaseRow === undefined) {
   console.error(`check-compat: docs/RELEASING.md has no row for ${pkg.version}`)
   process.exit(1)
 }
-if (releaseRow.dsh !== latest.dsh) {
+if (releaseRow !== undefined && releaseRow.dsh !== latest.dsh) {
   console.error(`check-compat: docs/RELEASING.md says ${releaseRow.dsh}, README says ${latest.dsh}`)
   process.exit(1)
 }
@@ -61,6 +65,6 @@ for (const [name, range] of dshPeers) {
   }
 }
 
-console.log(
-  `check-compat: ${pkg.version} -> DSH ${latest.dsh}; README, RELEASING.md and ${dshPeers.length} peers agree`,
-)
+console.log(prerelease
+  ? `check-compat: ${pkg.version} is a prerelease of the ${pkg.version.split("-")[0]} line -> DSH ${latest.dsh}; ${dshPeers.length} peers agree`
+  : `check-compat: ${pkg.version} -> DSH ${latest.dsh}; README, RELEASING.md and ${dshPeers.length} peers agree`)

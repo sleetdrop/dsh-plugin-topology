@@ -61,7 +61,7 @@ listed but not yet mined.
 | Contracts before code | Design docs (`docs/design/`), the release compatibility table, acceptance criteria in the PR. |
 | Structured handoff | `AGENTS.md` (short), `docs/RELEASING.md`, `docs/DSH-UPGRADE.md`, `NEXT-STEPS.md`, this file, git history. |
 | Context discipline | AGENTS.md stays short; detail lives in linked docs; no giant always-loaded prompt. |
-| Evals | Pure model tests (`test/inspector-model.test.ts`), locale parity, the `graph.render` path covered by host tests; the next slice adds tool contract evals. |
+| Evals | Pure model tests (`test/inspector-model.test.ts`), locale parity, the `graph_render` path covered by host tests; the next slice adds tool contract evals. |
 | Deterministic gates | CI + scripts, not prose. The release checklist now runs the same commands as CI. |
 | Drift is a defect class | Orphaned `lib/`, unknown `--dsw-*` tokens, locale skew, README/RELEASING/peer skew, payload drift. |
 | Human for irreversible steps | Tag and `pnpm publish` (OTP) stay human; user confirms the interactive smoke. |
@@ -77,7 +77,7 @@ listed but not yet mined.
 | Drift | manual six-step review | 5 scripts + locale test, wired into `pnpm check` and CI | generated docs, changelog check |
 | Packaging | manual `pnpm pack --dry-run` | `check-pack` + release-preflight artifact | provenance/signature if the registry supports it |
 | Security | none | Dependabot version updates + alerts/security updates (npm + Actions; DSH version bumps manual) | CodeQL / dependency audit |
-| Evals | manual UI smoke | pure model + locale tests; host graph tests | `graph.render` contract/golden evals; scripted UI acceptance |
+| Evals | manual UI smoke | pure model + locale tests; host graph tests | `graph_render` contract/golden evals; scripted UI acceptance |
 | Observability | none | — | trace grading for the model tool / failure cases |
 | Docs | AGENTS, RELEASING, DSH-UPGRADE | this playbook + PR template | changelog, docs link check |
 | Release | manual checklist | `Release preflight` workflow (no tag/publish) | keep tag/publish human |
@@ -147,7 +147,7 @@ current branch and on `v0.5.0`.
 - Lint/format as a separate, mechanical commit (not entangled with a feature).
 - React component tests (jsdom + testing-library) and a coverage floor.
 - Playwright visual/keyboard/a11y smoke against the pt-test profile.
-- `graph.render` contract/golden evals: schema, DOT/SVG invariants, cycles,
+- `graph_render` contract/golden evals: schema, DOT/SVG invariants, cycles,
   unresolved, rankdir; failure-case fixtures.
 - DSH-version compatibility matrix (install the previous rc alongside).
 
@@ -195,11 +195,11 @@ otherwise it is a link, not a gate.
 | [Anthropic — Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) (2025-09-29) | Attention budget; progressive disclosure; just-in-time context | adopted: short AGENTS + linked docs |
 | [Anthropic — The AI-native SDLC playbook](https://claude.com/blog/the-ai-native-sdlc-playbook) (2026-08-21) | Stage-by-stage SDLC change; measurement matters | watch: compare our gates each release |
 | [Claude Code — Best practices](https://code.claude.com/docs/en/best-practices) | Give a check; show evidence; fresh-context/adversarial review | adopted: PR evidence + review; next: subagent review |
-| [OpenAI — Evaluate agent workflows](https://developers.openai.com/api/docs/guides/agent-evals) | Traces → datasets → repeatable evals; regressions | next: `graph.render` evals; trace grading later |
+| [OpenAI — Evaluate agent workflows](https://developers.openai.com/api/docs/guides/agent-evals) | Traces → datasets → repeatable evals; regressions | next: `graph_render` evals; trace grading later |
 | [OpenAI — Testing Agent Skills Systematically with Evals](https://developers.openai.com/blog/eval-skills) | Systematic eval of skills/agents | next: turn smoke steps into an eval set |
 | [OpenAI — Using skills to accelerate OSS maintenance](https://developers.openai.com/blog/skills-agents-sdk) | Skills as maintenance workflows | watch |
 | [OpenAI — Harness engineering](https://openai.com/index/harness-engineering/) | Repository as the agent's harness/system of record | watch: direct page blocked here |
-| [Anthropic — Writing tools for AI agents](https://www.anthropic.com/engineering/writing-tools-for-agents) | Tool contracts, token-efficient responses | next: `graph.render` contract review |
+| [Anthropic — Writing tools for AI agents](https://www.anthropic.com/engineering/writing-tools-for-agents) | Tool contracts, token-efficient responses | next: `graph_render` contract review |
 
 ## Maintenance notes
 
