@@ -2,13 +2,15 @@ export const NS = 'pluginTopology'
 
 export type PluginTopologyLocaleKey =
   | 'title'
+  | 'panelLabel'
+  | 'pageIntro'
   | 'loading'
   | 'error'
   | 'retry'
   | 'zoomIn'
   | 'zoomOut'
   | 'resetView'
-  | 'zoomLevel'
+  | 'zoomReset'
   | 'downloadSvg'
   | 'downloadDot'
   | 'downloadJson'
@@ -19,6 +21,7 @@ export type PluginTopologyLocaleKey =
   | 'metricWeakComponents'
   | 'metricDiameter'
   | 'rankdirToggle'
+  | 'exportLabel'
   | 'unresolvedPlugin'
   | 'unresolvedService'
   | 'unresolvedState'
@@ -39,7 +42,6 @@ export type PluginTopologyLocaleKey =
   | 'emptyDependents'
   | 'neighborHint'
   | 'historyLabel'
-  | 'historyRoot'
   | 'back'
   | 'frameAll'
   | 'frameReset'
@@ -58,9 +60,6 @@ export type PluginTopologyLocaleKey =
   | 'neighborFilter'
   | 'neighborFilterNoMatch'
   | 'clearFilter'
-  | 'maximize'
-  | 'restore'
-  | 'closePanel'
   | 'providersTitle'
   | 'consumersTitle'
   | 'providerUnit'
@@ -79,21 +78,21 @@ export type PluginTopologyLocaleKey =
   | 'missingServices'
   | 'missingServiceNoProvider'
   | 'startupOrder'
-  | 'startupInstances'
   | 'startupSelected'
   | 'startupDependency'
   | 'startupDependent'
-  | 'startupLate'
 
 export const en: Record<PluginTopologyLocaleKey, string> = {
   title: 'Plugin topology',
+  panelLabel: 'Plugin topology',
+  pageIntro: 'Live plugin and service dependency graph.',
   loading: 'Loading…',
   error: 'Failed to load the plugin topology',
   retry: 'Retry',
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
-  resetView: 'Reset view',
-  zoomLevel: 'Zoom level',
+  resetView: 'Fit to view',
+  zoomReset: 'Reset to 100%',
   downloadSvg: 'SVG',
   downloadDot: 'DOT',
   downloadJson: 'JSON',
@@ -104,13 +103,14 @@ export const en: Record<PluginTopologyLocaleKey, string> = {
   metricWeakComponents: 'Disconnected parts',
   metricDiameter: 'Deepest dependency chain',
   rankdirToggle: 'Layout direction',
+  exportLabel: 'Export',
   unresolvedPlugin: 'Plugin',
   unresolvedService: 'Missing service',
   unresolvedState: 'State',
   legendLabel: 'Legend',
   legendUnresolved: 'Unresolved dependency',
   legendIsolated: 'Isolated plugin',
-  legendId: 'Instance creation ordinal within this run',
+  legendId: 'm, n are instance creation ordinals in this run',
   popoverClose: 'Close',
   popoverSource: 'Source',
   popoverOutgoing: 'Highlight outgoing dependencies',
@@ -124,7 +124,6 @@ export const en: Record<PluginTopologyLocaleKey, string> = {
   emptyDependents: 'No dependents',
   neighborHint: 'Hover an edge · Click to jump · Backspace to return',
   historyLabel: 'Location history',
-  historyRoot: 'Overview',
   back: 'Back',
   frameAll: 'Frame all',
   frameReset: 'Reset frame',
@@ -136,16 +135,13 @@ export const en: Record<PluginTopologyLocaleKey, string> = {
   searchResults: 'Search results',
   clearSearch: 'Clear search',
   inspectorTitle: 'Inspector',
-  inspectorEmptyTitle: 'Select a plugin',
+  inspectorEmptyTitle: 'Select a node',
   inspectorEmptyHint: 'Click a node on the canvas, or press / to search',
   inspectorCollapse: 'Collapse inspector',
   inspectorExpand: 'Expand inspector',
   neighborFilter: 'Filter neighbors…',
   neighborFilterNoMatch: 'No matching neighbors',
   clearFilter: 'Clear filter',
-  maximize: 'Maximize',
-  restore: 'Restore',
-  closePanel: 'Close panel',
   providersTitle: 'Providers',
   consumersTitle: 'Consumers',
   providerUnit: 'provider',
@@ -164,22 +160,22 @@ export const en: Record<PluginTopologyLocaleKey, string> = {
   missingServices: 'Missing services',
   missingServiceNoProvider: 'no provider',
   startupOrder: 'Startup order',
-  startupInstances: 'instances',
   startupSelected: 'selected',
   startupDependency: 'dependency',
   startupDependent: 'dependent',
-  startupLate: 'late provider',
 }
 
 export const zh: Record<PluginTopologyLocaleKey, string> = {
   title: '插件拓扑',
+  panelLabel: '插件拓扑',
+  pageIntro: '实时插件与服务依赖关系图。',
   loading: '加载中…',
   error: '加载插件拓扑失败',
   retry: '重试',
   zoomIn: '放大',
   zoomOut: '缩小',
-  resetView: '复位视图',
-  zoomLevel: '缩放比例',
+  resetView: '适应视图',
+  zoomReset: '恢复 100%',
   downloadSvg: 'SVG',
   downloadDot: 'DOT',
   downloadJson: 'JSON',
@@ -190,13 +186,14 @@ export const zh: Record<PluginTopologyLocaleKey, string> = {
   metricWeakComponents: '不相连的部分',
   metricDiameter: '最深依赖链',
   rankdirToggle: '布局方向',
+  exportLabel: '导出',
   unresolvedPlugin: '插件',
   unresolvedService: '缺失服务',
   unresolvedState: '状态',
   legendLabel: '图例',
   legendUnresolved: '存在未解析依赖',
   legendIsolated: '孤立插件（无依赖边）',
-  legendId: '本次运行内的创建序号',
+  legendId: 'm、n 为本次运行内的实例创建序号',
   popoverClose: '关闭',
   popoverSource: '来源',
   popoverOutgoing: '高亮它依赖的插件',
@@ -210,7 +207,6 @@ export const zh: Record<PluginTopologyLocaleKey, string> = {
   emptyDependents: '没有被依赖',
   neighborHint: '悬停只看一条边 · 点击跳转 · ⌫ 返回',
   historyLabel: '位置历史',
-  historyRoot: '全图',
   back: '返回',
   frameAll: '全部定位',
   frameReset: '还原视图',
@@ -222,16 +218,13 @@ export const zh: Record<PluginTopologyLocaleKey, string> = {
   searchResults: '搜索结果',
   clearSearch: '清除搜索',
   inspectorTitle: '检查器',
-  inspectorEmptyTitle: '选中一个插件',
+  inspectorEmptyTitle: '选中一个节点',
   inspectorEmptyHint: '点击画布节点，或按 / 搜索',
   inspectorCollapse: '收起检查器',
   inspectorExpand: '展开检查器',
   neighborFilter: '过滤邻居…',
   neighborFilterNoMatch: '没有匹配的邻居',
   clearFilter: '清除过滤',
-  maximize: '最大化',
-  restore: '还原',
-  closePanel: '关闭面板',
   providersTitle: 'Provider',
   consumersTitle: 'Consumer',
   providerUnit: '个 provider',
@@ -250,9 +243,7 @@ export const zh: Record<PluginTopologyLocaleKey, string> = {
   missingServices: '缺失服务',
   missingServiceNoProvider: '无 provider',
   startupOrder: '创建顺序',
-  startupInstances: '个实例',
   startupSelected: '选中',
   startupDependency: '依赖',
   startupDependent: '被依赖',
-  startupLate: 'provider 晚于 consumer',
 }

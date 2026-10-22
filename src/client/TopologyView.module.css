@@ -6,13 +6,98 @@
   height: 100%;
   min-height: 0;
   width: 100%;
-  padding: 16px;
-  gap: 12px;
+}
+
+/*
+ * The page header follows the shell's entry-page recipe: 28px of its own top
+ * padding, plus the reserved window strip (48px on macOS) so nothing lands
+ * under the traffic lights. Windows already reserves the caption above every
+ * column, so it only needs the 28px. The row is the window's drag band on
+ * macOS; the shell turns `data-window-drag` into that region and keeps the
+ * controls inside it clickable.
+ */
+.pageHeader {
+  box-sizing: border-box;
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 28px clamp(24px, 4vw, 48px) 0;
+}
+
+:global(html[data-platform='darwin']) .pageHeader {
+  padding-top: calc(28px + var(--dsh-frame-top-clearance, 0px));
+}
+
+.pageHeading {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 28px;
+  color: var(--dsw-alias-label-primary, #0f1115);
+}
+
+.pageIntro {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary, #61666b);
+}
+
+.pageActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  /* Never squeeze the action group below its content: let the whole group
+     wrap to a second header row instead of dropping one lone button. */
+  min-width: min-content;
+}
+
+.rankdirGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 0.5px solid var(--dsw-alias-border-l3, #0000001f);
+  border-radius: var(--dsw-radius-sm, 8px);
+  background: var(--dsw-alias-bg-layer-2, #ffffff);
+}
+
+/* A two-state toggle group, not a tablist: the primitive SegmentedControl
+   expects real tabpanels, which a layout direction does not have. The active
+   segment uses the business-primary fill (white text) to match the old
+   segmented-control and the dependency colour; the Button primary variant is
+   the app's charcoal action and would read as an action, not a view mode. */
+.rankdirGroup .rankdirActive,
+.rankdirGroup .rankdirActive:hover {
+  background: var(--dsw-alias-state-business-primary, #4176e6);
+  color: var(--dsw-alias-label-primary-foreground, #ffffff);
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px clamp(24px, 4vw, 48px) 20px;
+  overflow: hidden;
 }
 
 .status {
   margin: 0;
   color: var(--dsw-alias-label-secondary, #61666b);
+  font-size: 13px;
+  line-height: 20px;
 }
 
 .failure {
@@ -27,68 +112,14 @@
   max-width: 100%;
   overflow: auto;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--dsw-radius-sm, 8px);
   background: var(--dsw-alias-interactive-bg-hover, #2631480f);
   font-family: var(--ds-font-family-code, monospace);
   font-size: 11px;
   line-height: 1.5;
-  color: var(--dsw-alias-state-error-primary, #dc2626);
+  color: var(--dsw-alias-state-error-primary, #ec1313);
   white-space: pre-wrap;
   word-break: break-all;
-}
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  row-gap: 8px;
-}
-
-.summaryGroup {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.rankdirGroup {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  padding: 2px;
-  border: 1px solid var(--dsw-alias-border-l3, #0000001f);
-  border-radius: 6px;
-  background: var(--dsw-alias-bg-layer-2, #ffffff);
-}
-
-.rankdirOption {
-  min-width: 32px;
-  height: 22px;
-  padding: 0 8px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--dsw-alias-label-secondary, #61666b);
-  font-size: 11px;
-  text-align: center;
-  cursor: pointer;
-}
-
-.rankdirOption[aria-pressed='true'] {
-  background: var(--dsw-alias-state-business-primary, #3b82f6);
-  color: var(--dsw-alias-label-primary-foreground, #ffffff);
-  font-weight: 500;
 }
 
 /* Compact inline stats: `label value` pairs, not inflated KPI tiles. */
@@ -96,9 +127,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  column-gap: 20px;
-  row-gap: 6px;
-  padding: 2px 0;
+  column-gap: 24px;
+  row-gap: 4px;
+  padding: 0;
 }
 
 .stat {
@@ -113,15 +144,15 @@
 }
 
 .statValue {
-  font-size: 15px;
-  line-height: 1;
+  font-size: 16px;
+  line-height: 20px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--dsw-alias-label-primary, #0f1115);
 }
 
 .statAlert .statValue {
-  color: var(--dsw-alias-state-error-primary, #dc2626);
+  color: var(--dsw-alias-state-error-primary, #ec1313);
 }
 
 .statToggle {
@@ -148,8 +179,8 @@
 /* Log-style unresolved table: plugin | state | detailed reason (fills, wraps). */
 .unresolvedPanel {
   overflow: hidden;
-  border: 1px solid var(--dsw-alias-border-l2, #0000001a);
-  border-radius: 8px;
+  border: 0.5px solid var(--dsw-alias-border-l2, #0000001a);
+  border-radius: var(--dsw-radius-lg, 16px);
   background: var(--dsw-alias-bg-layer-2, #ffffff);
 }
 
@@ -225,7 +256,7 @@
 }
 
 .unresolvedPluginButton:focus-visible {
-  outline: 2px solid var(--dsw-alias-state-business-primary, #4176e6);
+  outline: var(--dsw-focus-ring-width, 2px) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary, #4176e6));
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -238,7 +269,7 @@
 
 .unresolvedService {
   font-family: var(--ds-font-family-code, monospace);
-  color: var(--dsw-alias-state-error-primary, #dc2626);
+  color: var(--dsw-alias-state-error-primary, #ec1313);
   overflow-wrap: anywhere;
 }
 
@@ -246,8 +277,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 16px;
+  gap: 4px 16px;
   font-size: 11px;
+  line-height: 16px;
   color: var(--dsw-alias-label-secondary, #61666b);
 }
 
@@ -265,7 +297,7 @@
 .legendUnresolvedBox {
   width: 12px;
   height: 12px;
-  border: 1.5px solid var(--dsw-alias-state-error-primary, #dc2626);
+  border: 1.5px solid var(--dsw-alias-state-error-primary, #ec1313);
   border-radius: 50%;
   background: var(--dsw-alias-bg-layer-2, #ffffff);
 }
@@ -273,9 +305,9 @@
 .legendIsolatedBox {
   width: 12px;
   height: 12px;
-  border: 1px dashed var(--dsw-alias-label-caption, #94a3b8);
+  border: 1px dashed var(--dsw-alias-label-caption, #adb2b8);
   border-radius: 2px;
-  background: var(--dsw-alias-bg-base, #f8fafc);
+  background: var(--dsw-alias-bg-base, #ffffff);
 }
 
 .legendIdSample {

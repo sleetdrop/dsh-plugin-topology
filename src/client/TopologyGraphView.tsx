@@ -1,8 +1,10 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react'
-import { IconFullscreenOutline16, IconMinusOutline16, IconPlusOutline16 } from './icons.tsx'
+import { IconFullscreenOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconMinusOutline16, IconPlusOutline16 } from './icons.tsx'
 import type { HighlightDirection, NodeSelection, TopologyTransform } from './stores.ts'
 import css from './TopologyGraphView.module.css'
+import { clampK, fitView, fitsViewport, formatZoom } from './graph-view-model.ts'
 
 export type { HighlightDirection } from './stores.ts'
 
@@ -52,8 +54,6 @@ export interface TopologyGraphHandle {
   findNodeForPlugin(pluginId: string, label: string): string | null
   /** Restore a transform (animated), or fit when null. */
   applyTransform(transform: TopologyTransform | null, animate: boolean): void
-  /** Center the whole graph at its fit scale (never below 1×). */
-  fitAll(): void
 }
 
 /** Zoom/pan props plus the localized control labels and the shared transform. */
@@ -64,14 +64,14 @@ export interface TopologyGraphViewProps {
   height: string
   /** Remembered transform; null until the first fit lands. */
   transform: TopologyTransform | null
-  /** Persist the latest transform (panel reopen survival). */
+  /** Persist the latest transform across page re-entry. */
   onTransformChange: (transform: TopologyTransform) => void
   zoomInLabel: string
   zoomOutLabel: string
   /** Reset-to-initial-view control (returns to the centered fit transform). */
   resetViewLabel: string
   /** Accessible name for the clickable zoom-level toggle. */
-  zoomLevelLabel: string
+  zoomResetLabel: string
   /** Called when a graph node is tapped; receives id, label, counts, and viewport coords. */
   onNodeClick?: (info: NodeClickInfo) => void
   /** Called when empty space is tapped (to close the popover and drop the highlight). */
@@ -101,6 +101,7 @@ const HIGHLIGHT_CLASSES = [
   'topo-hl-node',
   'topo-hl-neighbor',
   'topo-hl-edge',
+  'topo-hl-in',
   'topo-hl-weak',
   'topo-isolate-node',
   'topo-isolate-edge',
@@ -293,6 +294,10 @@ function applyHighlight(
     } else {
       edge.classList.add('topo-hl-edge')
     }
+    // Color by relation: an edge pointing at the selected node is a
+    // dependent (downstream, amber); one leaving it is a dependency (blue).
+    const endpoints = edgeEndpoints(edge)
+    if (endpoints !== null && endpoints.target === selection.dotId) edge.classList.add('topo-hl-in')
   }
 }
 
@@ -383,10 +388,6 @@ function SvgCanvas({ canvasRef, svg, alt, fitted, view, selectedKey, selectedDot
   )
 }
 
-const MIN_K = 0.05
-/** A fit never shrinks below this scale, so the default and reset land at actual size. */
-const MIN_FIT_K = 1.0
-const MAX_K = 64
 const ZOOM_FACTOR = 1.25
 /** Arrow-key pan step in screen px. */
 const PAN_STEP = 40
@@ -396,25 +397,6 @@ const FLY_MAX_K = 2.5
 /** Frame-all may shrink to 0.2× to fit a spread-out neighborhood, never past 1.5×. */
 const FRAME_MIN_K = 0.2
 const FRAME_MAX_K = 1.5
-
-function clampK(k: number): number {
-  return Math.min(MAX_K, Math.max(MIN_K, k))
-}
-
-/** Format the current scale as a map-like zoom level (e.g. "2.5×"). */
-function formatZoom(k: number): string {
-  return `${Math.round(k * 10) / 10}×`
-}
-
-/** Fit the natural-size image inside the container and center it, but never below `MIN_FIT_K`. */
-function fitView(containerWidth: number, containerHeight: number, naturalWidth: number, naturalHeight: number): TopologyTransform {
-  const k = Math.max(MIN_FIT_K, Math.min(containerWidth / naturalWidth, containerHeight / naturalHeight))
-  return {
-    k,
-    x: (containerWidth - naturalWidth * k) / 2,
-    y: (containerHeight - naturalHeight * k) / 2,
-  }
-}
 
 /** Respect the OS reduced-motion preference for the camera. */
 function prefersReducedMotion(): boolean {
@@ -481,7 +463,7 @@ type Size = { readonly width: number; readonly height: number }
  * The imperative handle lets the popover fly the camera and restore history.
  */
 export const TopologyGraphView = forwardRef<TopologyGraphHandle, TopologyGraphViewProps>(function TopologyGraphView({
-  svg, alt, height, transform, onTransformChange, zoomInLabel, zoomOutLabel, resetViewLabel, zoomLevelLabel,
+  svg, alt, height, transform, onTransformChange, zoomInLabel, zoomOutLabel, resetViewLabel, zoomResetLabel,
   onNodeClick, onEmptyClick, selectedKey, selectedDotId, direction, hoveredDotId,
   serviceHighlight, offscreenChips, onChipSelect,
 }, ref) {
@@ -496,7 +478,7 @@ export const TopologyGraphView = forwardRef<TopologyGraphHandle, TopologyGraphVi
   const [fitted, setFitted] = useState(transform !== null)
   const [containerSize, setContainerSize] = useState<Size | null>(null)
   const [atFit, setAtFit] = useState(false)
-  const [panelHovered, setPanelHovered] = useState(false)
+  const [controlsHovered, setControlsHovered] = useState(false)
   const [viewportHovered, setViewportHovered] = useState(false)
   const [chipViews, setChipViews] = useState<readonly ChipView[]>([])
 
@@ -515,10 +497,19 @@ export const TopologyGraphView = forwardRef<TopologyGraphHandle, TopologyGraphVi
     onTransformChange(next)
   }, [onTransformChange])
 
+  /** Whether a transform is the fit for the current viewport (within a pixel). */
+  const isFitTransform = useCallback((target: TopologyTransform): boolean => {
+    const container = containerRef.current
+    const natural = naturalRef.current
+    if (container === null || natural === null) return false
+    const rect = container.getBoundingClientRect()
+    return fitsViewport(target, rect.width, rect.height, natural.width, natural.height)
+  }, [])
+
   const animateTo = useCallback((target: TopologyTransform): void => {
     cancelAnimation()
+    setAtFit(isFitTransform(target))
     const from = viewRef.current
-    setAtFit(false)
     if (prefersReducedMotion()) {
       applyView(target)
       return
@@ -541,7 +532,7 @@ export const TopologyGraphView = forwardRef<TopologyGraphHandle, TopologyGraphVi
       }
     }
     animationRef.current = requestAnimationFrame(tick)
-  }, [applyView, cancelAnimation])
+  }, [applyView, cancelAnimation, isFitTransform])
 
   const fit = useCallback((): void => {
     const container = containerRef.current
@@ -552,6 +543,27 @@ export const TopologyGraphView = forwardRef<TopologyGraphHandle, TopologyGraphVi
     applyView(fitView(rect.width, rect.height, natural.width, natural.height))
     setAtFit(true)
   }, [applyView, cancelAnimation])
+
+  /** Center the graph at actual size (100%). */
+  const actualSize = useCallback((): void => {
+    const container = containerRef.current
+    const natural = naturalRef.current
+    if (container === null || natural === null) return
+    cancelAnimation()
+    const rect = container.getBoundingClientRect()
+    applyView({
+      k: 1,
+      x: (rect.width - natural.width) / 2,
+      y: (rect.height - natural.height) / 2,
+    })
+    setAtFit(false)
+  }, [applyView, cancelAnimation])
+
+  /** The overview control toggles: at fit it returns to 100%, otherwise it fits. */
+  const toggleFit = useCallback((): void => {
+    if (atFit) actualSize()
+    else fit()
+  }, [atFit, actualSize, fit])
 
   const zoomAround = useCallback((px: number, py: number, factor: number): void => {
     cancelAnimation()
@@ -721,9 +733,9 @@ export const TopologyGraphView = forwardRef<TopologyGraphHandle, TopologyGraphVi
     } else {
       cancelAnimation()
       applyView(next)
-      setAtFit(false)
+      setAtFit(isFitTransform(next))
     }
-  }, [animateTo, applyView, cancelAnimation, fit])
+  }, [animateTo, applyView, cancelAnimation, fit, isFitTransform])
 
   useImperativeHandle(ref, () => ({
     snapshotNode,
@@ -732,8 +744,7 @@ export const TopologyGraphView = forwardRef<TopologyGraphHandle, TopologyGraphVi
     frameNodes,
     findNodeForPlugin,
     applyTransform,
-    fitAll: fit,
-  }), [snapshotNode, snapshotNeighbors, flyToNode, frameNodes, findNodeForPlugin, applyTransform, fit])
+  }), [snapshotNode, snapshotNeighbors, flyToNode, frameNodes, findNodeForPlugin, applyTransform])
 
   // Keep the latest store transform in a ref so the SVG-geometry effect does
   // not re-run on every camera frame; it only needs it when a new SVG lands.
@@ -747,11 +758,13 @@ export const TopologyGraphView = forwardRef<TopologyGraphHandle, TopologyGraphVi
     if (match !== null) {
       naturalRef.current = { width: parseFloat(match[1] ?? '0'), height: parseFloat(match[2] ?? '0') }
       if (transformRef.current === null) {
-        requestAnimationFrame(() => { fit() })
+        requestAnimationFrame(() => { actualSize() })
+      } else {
+        setAtFit(isFitTransform(transformRef.current))
       }
       setFitted(true)
     }
-  }, [svg, fit])
+  }, [svg, actualSize, isFitTransform])
 
   // Place up to three border chips for far ends that are outside the viewport.
   // The overlay is a sibling of the viewport, so clicking a chip cannot start a
@@ -921,25 +934,7 @@ export const TopologyGraphView = forwardRef<TopologyGraphHandle, TopologyGraphVi
     zoomAround(px, py, event.shiftKey ? 1 / ZOOM_FACTOR : ZOOM_FACTOR)
   }
 
-  const onZoomLevelClick = (): void => {
-    if (atFit) {
-      const size = containerSize
-      const natural = naturalRef.current
-      const width = size?.width ?? 0
-      const height = size?.height ?? 0
-      cancelAnimation()
-      applyView({
-        k: 1,
-        x: (width - (natural?.width ?? 0)) / 2,
-        y: (height - (natural?.height ?? 0)) / 2,
-      })
-      setAtFit(false)
-    } else {
-      fit()
-    }
-  }
-
-  const collapsed = atFit && !panelHovered
+  const collapsed = atFit && !controlsHovered
 
   return (
     <div className={css.graphBox} style={{ height }}>
@@ -987,12 +982,12 @@ export const TopologyGraphView = forwardRef<TopologyGraphHandle, TopologyGraphVi
       ) : null}
       <div
         className={collapsed ? `${css.zoomControls} ${css.collapsed}` : css.zoomControls}
-        onPointerEnter={() => { setPanelHovered(true) }}
-        onPointerLeave={() => { setPanelHovered(false) }}
+        onPointerEnter={() => { setControlsHovered(true) }}
+        onPointerLeave={() => { setControlsHovered(false) }}
       >
-        <button type="button" className={`${css.iconButton} ${css.fitButton}`} onClick={fit} aria-label={resetViewLabel} title={resetViewLabel}><IconFullscreenOutline16 /></button>
+        <button type="button" className={`${css.iconButton} ${css.fitButton}`} onClick={toggleFit} aria-label={atFit ? zoomResetLabel : resetViewLabel} title={atFit ? zoomResetLabel : resetViewLabel}><IconFullscreenOutlineRegular size={14} /></button>
         <button type="button" className={`${css.iconButton} ${css.zoomButton}`} onClick={() => { zoomAtCenter(1 / ZOOM_FACTOR) }} aria-label={zoomOutLabel} title={zoomOutLabel}><IconMinusOutline16 /></button>
-        <button type="button" className={css.zoomLevel} onClick={onZoomLevelClick} aria-label={zoomLevelLabel} title={zoomLevelLabel}>{formatZoom(view.k)}</button>
+        <button type="button" className={css.zoomLevel} onClick={actualSize} aria-label={zoomResetLabel} title={zoomResetLabel}>{formatZoom(view.k)}</button>
         <button type="button" className={`${css.iconButton} ${css.zoomButton}`} onClick={() => { zoomAtCenter(ZOOM_FACTOR) }} aria-label={zoomInLabel} title={zoomInLabel}><IconPlusOutline16 /></button>
       </div>
     </div>

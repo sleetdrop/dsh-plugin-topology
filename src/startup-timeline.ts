@@ -1,21 +1,18 @@
 /**
- * Pure startup-timeline model for the 0.7.0 right rail.
+ * Pure startup-timeline model for the inspector's startup-order strip.
  *
  * The creation ordinal is already in the runtime: `p:<n>` ids and the rendered
  * `[n,m]` label. This turns it into a global 1..N axis and marks the selected
- * node, its direct neighbours and late providers.
+ * node and its direct neighbours.
  *
  * @module @sleetdrop/dsh-plugin-topology/startup-timeline
  */
 
-import type { PluginNode, PluginState, TopologyAnalysis } from './types.ts'
+import type { PluginNode, TopologyAnalysis } from './types.ts'
 
 export interface TimelineInstance {
   readonly ordinal: number
   readonly plugin: PluginNode
-  readonly state: PluginState
-  readonly role: 'selected' | 'instance' | 'dependency' | 'dependent'
-  readonly lateProvider: boolean
 }
 
 export interface StartupTimeline {
@@ -26,7 +23,6 @@ export interface StartupTimeline {
   readonly selected: readonly TimelineInstance[]
   readonly dependencies: readonly TimelineInstance[]
   readonly dependents: readonly TimelineInstance[]
-  readonly lateProviders: readonly TimelineInstance[]
   readonly service?: {
     readonly providers: readonly TimelineInstance[]
     readonly consumers: readonly TimelineInstance[]
@@ -45,8 +41,35 @@ export function pluginOrdinals(plugin: PluginNode): number[] {
   return [...new Set(values)].sort((a, b) => a - b)
 }
 
-function instance(plugin: PluginNode, ordinal: number, role: TimelineInstance['role'], lateProvider = false): TimelineInstance {
-  return { ordinal, plugin, state: plugin.state, role, lateProvider }
+function instance(plugin: PluginNode, ordinal: number): TimelineInstance {
+  return { ordinal, plugin }
+}
+
+/** `name[1,2,3]` -> `name`; labels without a bracket are unchanged. */
+function baseLabel(label: string): string {
+  return label.replace(/\s*\[[^\]]*\]\s*$/, '').trim()
+}
+
+/**
+ * Whether a timeline instance belongs to the inspector row currently hovered
+ * or focused. Merged rows can carry `m:N` while timeline instances carry their
+ * member ids, so compare both the raw id and the bracket-stripped label.
+ */
+/** A merged row either carries an SVG `m:` id or lists several ordinals. */
+function rowIsMerged(hoveredId: string | null, hoveredLabel: string): boolean {
+  if (hoveredId !== null && hoveredId.startsWith('m:')) return true
+  const bracket = /\[([^\]]*)\]\s*$/.exec(hoveredLabel)?.[1]
+  return bracket !== undefined && (bracket.includes(',') || bracket.includes('…'))
+}
+
+export function matchesTimelineHover(
+  plugin: Pick<PluginNode, 'id' | 'label'>,
+  hoveredId: string | null,
+  hoveredLabel: string | null,
+): boolean {
+  if (hoveredId !== null && plugin.id === hoveredId) return true
+  if (hoveredLabel === null || !rowIsMerged(hoveredId, hoveredLabel)) return false
+  return baseLabel(plugin.label) === baseLabel(hoveredLabel)
 }
 
 /**
@@ -62,10 +85,29 @@ export function buildStartupTimeline(
   for (const node of analysis.graph.nodes) {
     if (node.kind === 'plugin') plugins.set(node.id, node)
   }
+  // A collapsed edge may target one member of a merged group. Group the
+  // plugin ids by their bracket-stripped label, then emit one instance per
+  // ordinal so every member of the group is represented on the strip.
+  const groupByBase = new Map<string, PluginNode[]>()
+  for (const node of plugins.values()) {
+    const base = baseLabel(node.label)
+    const members = groupByBase.get(base) ?? []
+    members.push(node)
+    groupByBase.set(base, members)
+  }
+  const resolveGroup = (id: string): { key: string; plugin: PluginNode; ordinals: number[] } | null => {
+    const direct = plugins.get(id)
+    if (direct === undefined) return null
+    const key = baseLabel(direct.label)
+    const members = groupByBase.get(key) ?? [direct]
+    const ordinals = [...new Set(members.flatMap(pluginOrdinals))].sort((a, b) => a - b)
+    if (ordinals.length === 0) return null
+    return { key, plugin: members[0] ?? direct, ordinals }
+  }
 
   const global: TimelineInstance[] = []
   for (const node of analysis.collapsed.nodes) {
-    for (const ordinal of pluginOrdinals(node)) global.push(instance(node, ordinal, 'instance'))
+    for (const ordinal of pluginOrdinals(node)) global.push(instance(node, ordinal))
   }
   global.sort((a, b) => a.ordinal - b.ordinal || a.plugin.label.localeCompare(b.plugin.label))
 
@@ -73,61 +115,57 @@ export function buildStartupTimeline(
   const selectedInstances: TimelineInstance[] = []
   const dependencies: TimelineInstance[] = []
   const dependents: TimelineInstance[] = []
-  const lateProviders: TimelineInstance[] = []
 
   for (const node of analysis.collapsed.nodes) {
     if (!selected.has(node.id)) continue
-    for (const ordinal of pluginOrdinals(node)) selectedInstances.push(instance(node, ordinal, 'selected'))
+    for (const ordinal of pluginOrdinals(node)) selectedInstances.push(instance(node, ordinal))
   }
-
-  const selectedMin = selectedInstances.reduce(
-    (min, item) => Math.min(min, item.ordinal),
-    Number.POSITIVE_INFINITY,
-  )
   const seenDependencies = new Set<string>()
   const seenDependents = new Set<string>()
   for (const edge of analysis.collapsed.edges) {
-    if (selected.has(edge.source) && !seenDependencies.has(edge.target)) {
-      seenDependencies.add(edge.target)
-      const provider = plugins.get(edge.target)
-      if (provider !== undefined) {
-        for (const ordinal of pluginOrdinals(provider)) {
-          const late = Number.isFinite(selectedMin) && ordinal > selectedMin
-          const item = instance(provider, ordinal, 'dependency', late)
-          dependencies.push(item)
-          if (late) lateProviders.push(item)
+    if (selected.has(edge.source)) {
+      const group = resolveGroup(edge.target)
+      if (group !== null && !seenDependencies.has(group.key)) {
+        seenDependencies.add(group.key)
+        for (const ordinal of group.ordinals) {
+          dependencies.push(instance(group.plugin, ordinal))
         }
       }
     }
-    if (selected.has(edge.target) && !seenDependents.has(edge.source)) {
-      seenDependents.add(edge.source)
-      const consumer = plugins.get(edge.source)
-      if (consumer !== undefined) {
-        for (const ordinal of pluginOrdinals(consumer)) dependents.push(instance(consumer, ordinal, 'dependent'))
+    if (selected.has(edge.target)) {
+      const group = resolveGroup(edge.source)
+      if (group !== null && !seenDependents.has(group.key)) {
+        seenDependents.add(group.key)
+        for (const ordinal of group.ordinals) dependents.push(instance(group.plugin, ordinal))
       }
     }
   }
 
   let service: StartupTimeline['service']
   if (serviceId !== undefined) {
-    const providers = new Map<string, PluginNode>()
-    const consumers = new Map<string, PluginNode>()
+    const providers: TimelineInstance[] = []
+    const consumers: TimelineInstance[] = []
+    const seenProviders = new Set<string>()
+    const seenConsumers = new Set<string>()
+    const push = (list: TimelineInstance[], seen: Set<string>, plugin: PluginNode): void => {
+      for (const ordinal of pluginOrdinals(plugin)) {
+        const key = `${plugin.id}:${ordinal}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        list.push(instance(plugin, ordinal))
+      }
+    }
     for (const edge of analysis.graph.edges) {
       if (edge.kind === 'provides' && edge.target === serviceId) {
         const plugin = plugins.get(edge.source)
-        if (plugin !== undefined) providers.set(plugin.id, plugin)
+        if (plugin !== undefined) push(providers, seenProviders, plugin)
       }
       if (edge.kind === 'injects' && edge.source === serviceId) {
         const plugin = plugins.get(edge.target)
-        if (plugin !== undefined) consumers.set(plugin.id, plugin)
+        if (plugin !== undefined) push(consumers, seenConsumers, plugin)
       }
     }
-    service = {
-      providers: [...providers.values()].flatMap(plugin =>
-        pluginOrdinals(plugin).map(ordinal => instance(plugin, ordinal, 'instance'))),
-      consumers: [...consumers.values()].flatMap(plugin =>
-        pluginOrdinals(plugin).map(ordinal => instance(plugin, ordinal, 'instance'))),
-    }
+    service = { providers, consumers }
   }
 
   const ordinals = global.map(item => item.ordinal)
@@ -139,7 +177,6 @@ export function buildStartupTimeline(
     selected: selectedInstances.sort((a, b) => a.ordinal - b.ordinal),
     dependencies: dependencies.sort((a, b) => a.ordinal - b.ordinal),
     dependents: dependents.sort((a, b) => a.ordinal - b.ordinal),
-    lateProviders: lateProviders.sort((a, b) => a.ordinal - b.ordinal),
     ...(service === undefined ? {} : { service }),
   }
 }

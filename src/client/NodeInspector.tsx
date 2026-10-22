@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react'
-import { IconChevronDownOutline14, IconCloseOutline16, IconPluginOutline16, IconSearchOutline16 } from './icons.tsx'
+import { IconChevronDownOutlineRegular, IconCloseOutlineRegular, IconSearchOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { HighlightDirection, NodeSelection } from './stores.ts'
 import type { NeighborInfo, NeighborhoodInfo } from './TopologyGraphView.tsx'
 import type { PluginNode, PluginState, TopologyAnalysis } from '../types.ts'
@@ -8,6 +8,7 @@ import type { PluginTopologyLocaleKey } from './locales.ts'
 import { buildRows, matchesNeighbor, npmUrl, resolveNode } from './inspector-model.ts'
 import { missingServices } from '../service-model.ts'
 import { buildStartupTimeline } from '../startup-timeline.ts'
+import { IconSelectNodeOutline32 } from './icons.tsx'
 import { StartupTimeline } from './StartupTimeline.tsx'
 import type { RowView } from './inspector-model.ts'
 import css from './NodeInspector.module.css'
@@ -15,6 +16,7 @@ import css from './NodeInspector.module.css'
 function stateBadgeClass(state: PluginState): string {
   if (state === 'ACTIVE') return `${css.stateBadge} ${css.stateActive}`
   if (state === 'FAILED') return `${css.stateBadge} ${css.stateFailed}`
+  if (state === 'LOADING' || state === 'UNLOADING') return `${css.stateBadge} ${css.stateLoading}`
   if (state === 'PENDING') return `${css.stateBadge} ${css.statePending}`
   return `${css.stateBadge} ${css.stateOther}`
 }
@@ -22,6 +24,7 @@ function stateBadgeClass(state: PluginState): string {
 function stateDotClass(state: PluginState): string {
   if (state === 'ACTIVE') return `${css.stateDot} ${css.stateActiveDot}`
   if (state === 'FAILED') return `${css.stateDot} ${css.stateFailedDot}`
+  if (state === 'LOADING' || state === 'UNLOADING') return `${css.stateDot} ${css.stateLoadingDot}`
   if (state === 'PENDING') return `${css.stateDot} ${css.statePendingDot}`
   return `${css.stateDot} ${css.stateOtherDot}`
 }
@@ -60,10 +63,12 @@ export function NodeInspector({
   onSelectPlugin, t,
 }: NodeInspectorProps): ReactNode {
   const [filter, setFilter] = useState('')
+  const [hoveredNeighbor, setHoveredNeighbor] = useState<NeighborInfo | null>(null)
   const outListRef = useRef<HTMLDivElement>(null)
   const inListRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { setFilter('') }, [selection?.key])
+  useEffect(() => { setHoveredNeighbor(null) }, [selection?.key, direction, filter])
   useEffect(() => {
     outListRef.current?.scrollTo({ top: 0 })
     inListRef.current?.scrollTo({ top: 0 })
@@ -102,21 +107,18 @@ export function NodeInspector({
           aria-label={t('inspectorExpand')}
           title={t('inspectorExpand')}
         >
-          <IconChevronDownOutline14 size={12} className={css.chevronLeft} />
+          <IconChevronDownOutlineRegular size={12} className={css.chevronLeft} />
         </button>
-        {selection !== null && resolved !== null ? (
-          <>
-            <span className={css.collapsedInitial} title={selection.label}>{selection.label.slice(0, 1)}</span>
-            <span className={stateDotClass(resolved.node.state)} aria-hidden />
-          </>
-        ) : null}
+        {/* The rail is a handle, not a summary: the canvas already marks the
+            selection, so a first letter or state dot here reads as data. */}
+        <span className={css.collapsedTitle} aria-hidden>{t('inspectorTitle')}</span>
       </aside>
     )
   }
 
   if (selection === null || resolved === null) {
     return (
-      <aside className={css.inspector} aria-label={t('inspectorTitle')}>
+      <aside className={`${css.inspector} ${css.inspectorEmpty}`} aria-label={t('inspectorTitle')}>
         <div className={css.emptyHeader}>
           <span className={css.emptyHeaderTitle}>{t('inspectorTitle')}</span>
           <button
@@ -126,11 +128,11 @@ export function NodeInspector({
             aria-label={t('inspectorCollapse')}
             title={t('inspectorCollapse')}
           >
-            <IconChevronDownOutline14 size={12} className={css.chevronRight} />
+            <IconChevronDownOutlineRegular size={12} className={css.chevronRight} />
           </button>
         </div>
         <div className={css.emptyState}>
-          <IconPluginOutline16 size={22} className={css.emptyIcon} />
+          <IconSelectNodeOutline32 size={32} className={css.emptyIcon} />
           <span className={css.emptyTitle}>{t('inspectorEmptyTitle')}</span>
           <span className={css.emptyHint}>{t('inspectorEmptyHint')}</span>
         </div>
@@ -162,14 +164,23 @@ export function NodeInspector({
     const compact = rows.length === 0
     const hoverAllowed = direction === null || active
     const hoverRow = (neighbor: NeighborInfo): void => {
-      if (hoverAllowed) onHoverNeighbor(neighbor)
+      if (!hoverAllowed) return
+      setHoveredNeighbor(neighbor)
+      onHoverNeighbor(neighbor)
     }
     const unhoverRow = (): void => {
-      if (hoverAllowed) onHoverNeighbor(null)
+      if (!hoverAllowed) return
+      setHoveredNeighbor(null)
+      onHoverNeighbor(null)
     }
     const countLabel = query === '' ? String(allRows.length) : `${rows.length}/${allRows.length}`
     const emptyText = loading ? '…' : query !== '' ? t('neighborFilterNoMatch') : emptyLabel
-    const className = [css.section, active ? css.sectionActive : '', compact ? css.sectionCompact : '']
+    const className = [
+      css.section,
+      active ? css.sectionActive : '',
+      active && sectionDirection === 'in' ? css.sectionActiveIn : '',
+      compact ? css.sectionCompact : '',
+    ]
       .filter(part => part !== '')
       .join(' ')
     return (
@@ -247,7 +258,7 @@ export function NodeInspector({
       className={css.inspector}
       aria-label={t('inspectorTitle')}
       onKeyDown={onInspectorKeyDown}
-      onMouseLeave={() => { onHoverNeighbor(null) }}
+      onMouseLeave={() => { setHoveredNeighbor(null); onHoverNeighbor(null) }}
     >
       <header className={css.header}>
         <div className={css.headerTop}>
@@ -264,10 +275,10 @@ export function NodeInspector({
               aria-label={t('inspectorCollapse')}
               title={t('inspectorCollapse')}
             >
-              <IconChevronDownOutline14 size={12} className={css.chevronRight} />
+              <IconChevronDownOutlineRegular size={12} className={css.chevronRight} />
             </button>
             <button type="button" className={css.iconButton} onClick={onClose} aria-label={t('popoverClose')} title={t('popoverClose')}>
-              <IconCloseOutline16 size={12} />
+              <IconCloseOutlineRegular size={12} />
             </button>
           </div>
         </div>
@@ -284,7 +295,7 @@ export function NodeInspector({
           </div>
         )}
         <div className={css.filterRow}>
-          <IconSearchOutline16 size={11} className={css.filterIcon} />
+          <IconSearchOutlineRegular size={11} className={css.filterIcon} />
           <input
             className={css.filterInput}
             value={filter}
@@ -307,7 +318,7 @@ export function NodeInspector({
               aria-label={t('clearFilter')}
               title={t('clearFilter')}
             >
-              <IconCloseOutline16 size={10} />
+              <IconCloseOutlineRegular size={12} />
             </button>
           ) : null}
         </div>
@@ -328,7 +339,13 @@ export function NodeInspector({
           </div>
         </div>
       ) : null}
-      <StartupTimeline timeline={timeline} mode="node" onSelectPlugin={onSelectPlugin} t={t} />
+      <StartupTimeline
+        timeline={timeline}
+        mode="node"
+        hoveredPluginId={hoveredNeighbor?.dotId ?? null}
+        hoveredPluginLabel={hoveredNeighbor?.label ?? null}
+        t={t}
+      />
       <div className={css.sections}>
         {renderSection('out', t('dependencies'), selection.outCount, outAll, outRows, outListRef, t('emptyDependencies'))}
         {renderSection('in', t('dependents'), selection.inCount, inAll, inRows, inListRef, t('emptyDependents'))}

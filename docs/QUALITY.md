@@ -94,7 +94,8 @@ listed but not yet mined.
 - `.github/pull_request_template.md` — definition-of-done checklist and evidence.
 - `scripts/check-lib-orphans.mjs` — the 0.5.0 stale-module failure mode.
 - `scripts/check-client-externals.mjs` — the frozen loader table is a contract.
-- `scripts/check-css-tokens.mjs` — every `--dsw-*` against the pinned theme.
+- `scripts/check-css-tokens.mjs` — `--dsw-*`/`--ds-*` against the pinned theme, `--dsh-*` against the theme/local declarations/host-frame allowlist, and every checked `--dsw-alias-*` fallback that maps directly to a theme token against the light value.
+- `scripts/check-graph-classes.mjs` — every dynamic `topo-*` class added to the SVG is reset by `clearHighlight` (or explicitly allowlisted).
 - `scripts/check-pack.mjs` — the exact shipping payload, not the repo tree.
 - `scripts/check-compat.mjs` — package.json ↔ README ↔ RELEASING ↔ DSH peers.
 - `test/locales.test.ts` — en/zh key + placeholder parity.
@@ -108,13 +109,14 @@ listed but not yet mined.
 | --- | --- | --- |
 | Orphaned build output | `node scripts/check-lib-orphans.mjs` | a removed source's `lib/*.js` still shipping |
 | Client externals | `node scripts/check-client-externals.mjs` | a require the DSH loader cannot answer |
-| DSH tokens | `node scripts/check-css-tokens.mjs` | a guessed/misspelled `--dsw-*` silently falling back |
+| DSH tokens | `node scripts/check-css-tokens.mjs` | a guessed/misspelled `--dsw-*`/`--ds-*`/`--dsh-*`, or a fallback literal the theme never chose, silently painting |
+| Graph highlight classes | `node scripts/check-graph-classes.mjs` | a new `topo-*` class outliving a selection change |
 | Shipping payload | `node scripts/check-pack.mjs` | missing entry points or `src/`, `test/`, `docs/` in the tarball |
 | Compatibility | `node scripts/check-compat.mjs` | package version, README row, RELEASING row, DSH peer ranges disagreeing |
 | Locales | `pnpm test` (`test/locales.test.ts`) | en/zh key or placeholder skew |
 | Inspector model | `pnpm test` (`test/inspector-model.test.ts`) | merged-label / state-order regressions |
 
-`check-css-tokens` reads the pinned `@deepseek-ai/dsh-client-ui-theme` package.
+`check-css-tokens` reads the pinned `@deepseek-ai/dsh-client-ui-theme` package and recognizes our local `--dsh-tl-*` declarations plus the host `--dsh-frame-*` family.
 On a DSH upgrade, bump that devDependency with the other DSH packages; the audit
 then follows the new theme automatically.
 

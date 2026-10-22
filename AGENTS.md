@@ -10,7 +10,7 @@ keep it short and actionable. Full process detail lives in
 
 `@sleetdrop/dsh-plugin-topology` — an out-of-tree DeepSeek Harness plugin: a
 Cordis host service that snapshots the live plugin fiber tree, a `graph.render`
-model tool, and a browser panel that draws the topology.
+model tool, and a global browser page that draws the topology.
 
 It tracks DSH `rc` releases on its **own independent semver**. The mapping
 between plugin version and validated DSH release is the compatibility table in

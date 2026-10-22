@@ -46,7 +46,7 @@ export interface HistoryEntry {
   readonly transform: TopologyTransform | null
 }
 
-/** Viewer state shared across the panel's mount/unmount cycles. */
+/** Viewer state shared across the page's mount/unmount cycles. */
 export interface ViewerState {
   /** Remembered transform; null until the first fit lands. */
   transform: TopologyTransform | null
@@ -77,7 +77,7 @@ export type ViewerActions = {
 /** The engine-backed viewer handle (spec + actions in one). */
 export type ViewerHandle = EngineStoreHandle<ViewerState, ViewerActions>
 
-/** The baked (draft-stripped) actions the panel component receives. */
+/** The baked (draft-stripped) actions the page component receives. */
 export type ViewerActionBindings = BoundActions<ViewerHandle>
 
 /** Keep the navigation trail bounded; older entries fall off the front. */
@@ -85,8 +85,8 @@ const HISTORY_LIMIT = 20
 
 /**
  * Create the shared root-scope viewer handle. Transform, layout direction,
- * selection, and history are written here so they survive the panel's
- * unmount/remount when the user closes and reopens the global panel.
+ * selection, and history are written here so they survive the page's
+ * unmount/remount when the user leaves and re-enters the global page.
  * @returns the store handle (spec + type + identity + factory in one).
  */
 export function createTopologyViewStore(): ViewerHandle {

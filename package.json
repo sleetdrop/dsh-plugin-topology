@@ -1,7 +1,7 @@
 {
   "name": "@sleetdrop/dsh-plugin-topology",
   "version": "0.7.0",
-  "description": "Plugin dependency graph inspector for DeepSeek Harness: a host service that snapshots the live Cordis plugin fiber tree, a graph.render tool for the model, and a browser panel that renders the plugin/service topology as a zoomable graph with metrics, legend, and unresolved-dependency table.",
+  "description": "Plugin dependency graph inspector for DeepSeek Harness: a host service that snapshots the live Cordis plugin fiber tree, a graph.render tool for the model, and a browser page that renders the plugin/service topology as a zoomable graph with metrics, legend, and unresolved-dependency table.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -64,6 +64,7 @@
         "@deepseek-ai/dsh-client-ui-renderer",
         "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout",
         "@deepseek-ai/dsh-api-remotes",
         "@deepseek-ai/dsh-client-ui-sidebar"
       ]
@@ -75,10 +76,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsc -p tsconfig.test.json && node --test 'lib-test/test/*.test.js'",
     "check": "pnpm run typecheck && pnpm run build && pnpm run test && pnpm run check:drift",
-    "check:drift": "node scripts/check-lib-orphans.mjs && node scripts/check-client-externals.mjs && node scripts/check-css-tokens.mjs && node scripts/check-pack.mjs && node scripts/check-compat.mjs",
+    "check:drift": "node scripts/check-lib-orphans.mjs && node scripts/check-client-externals.mjs && node scripts/check-css-tokens.mjs && node scripts/check-graph-classes.mjs && node scripts/check-pack.mjs && node scripts/check-compat.mjs",
     "check:lib": "node scripts/check-lib-orphans.mjs",
     "check:externals": "node scripts/check-client-externals.mjs",
     "check:tokens": "node scripts/check-css-tokens.mjs",
+    "check:classes": "node scripts/check-graph-classes.mjs",
     "check:pack": "node scripts/check-pack.mjs",
     "check:compat": "node scripts/check-compat.mjs",
     "prepare": "pnpm run build",
@@ -90,6 +92,8 @@
     "@deepseek-ai/dsh-client-connection": "^0.2.1-rc.2",
     "@deepseek-ai/dsh-client-locale": "^0.2.1-rc.2",
     "@deepseek-ai/dsh-client-store": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-layout": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "^0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-renderer": "^0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-sidebar": "^0.2.1-rc.2",
     "@deepseek-ai/dsh-invariants": "^0.2.0-rc.2",
@@ -102,6 +106,8 @@
     "@deepseek-ai/dsh-client-connection": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-locale": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-store": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-layout": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-renderer": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-sidebar": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.1-rc.2",

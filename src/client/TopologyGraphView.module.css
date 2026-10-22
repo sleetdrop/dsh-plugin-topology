@@ -12,8 +12,8 @@
   overflow: hidden;
   cursor: grab;
   background: var(--dsw-alias-bg-layer-1, #ffffff);
-  border: 1px solid var(--dsw-alias-border-l2, #0000001a);
-  border-radius: 8px;
+  border: 0.5px solid var(--dsw-alias-border-l2, #0000001a);
+  border-radius: var(--dsw-radius-lg, 16px);
 }
 
 .graphViewport:active {
@@ -27,6 +27,12 @@
   transform-origin: 0 0;
   user-select: none;
   width: max-content;
+}
+
+/* On screen the graph labels follow the harness text font; the Graphviz
+   `fontname` attribute stays in the exported SVG for interoperability. */
+.graphImg :global(text) {
+  font-family: var(--dsw-font-family, sans-serif);
 }
 
 /* ── Selection & dependency highlight ──
@@ -78,6 +84,21 @@
 .graphImg :global(.topo-hl-edge) text {
   fill: var(--dsw-alias-state-business-primary, #4176e6);
   fill-opacity: 1;
+}
+
+/* Incoming edges are dependents: the same amber the timeline and the
+   inspector's "Dependents" section use, never the error color. */
+.graphImg :global(.topo-hl-edge.topo-hl-in) path {
+  stroke: var(--dsw-alias-state-warn-primary, #f59e0b);
+}
+
+.graphImg :global(.topo-hl-edge.topo-hl-in) polygon {
+  stroke: var(--dsw-alias-state-warn-primary, #f59e0b);
+  fill: var(--dsw-alias-state-warn-primary, #f59e0b);
+}
+
+.graphImg :global(.topo-hl-edge.topo-hl-in) text {
+  fill: var(--dsw-alias-state-warn-primary, #f59e0b);
 }
 
 /* A hovered far end from the neighbor list: one edge/one node full strength. */
@@ -144,10 +165,10 @@
   align-items: center;
   gap: 2px;
   padding: 4px;
-  border: 1px solid var(--dsw-alias-border-l2, #0000001a);
-  border-radius: 8px;
+  border: 0.5px solid var(--dsw-alias-border-l2, #0000001a);
+  border-radius: var(--dsw-radius-md, 12px);
   background: var(--dsw-alias-bg-layer-2, #ffffff);
-  box-shadow: 0 6px 16px rgb(0 0 0 / 0.08);
+  box-shadow: var(--dsw-elevation-panel);
 }
 
 .zoomControls button {
@@ -156,7 +177,7 @@
   justify-content: center;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--dsw-radius-sm, 8px);
   background: transparent;
   color: var(--dsw-alias-label-secondary, #61666b);
   cursor: pointer;
@@ -172,18 +193,18 @@
   height: 24px;
 }
 
-/* Zoom-out / zoom-in hide (collapse) when the view rests at fit. */
 .zoomControls .zoomButton {
   transition: opacity 0.15s ease, width 0.15s ease;
 }
 
 .zoomLevel {
-  min-width: 46px;
+  min-width: 52px;
   height: 22px;
   padding: 0 4px;
   font-size: 11px;
   line-height: 1;
   text-align: center;
+  font-variant-numeric: tabular-nums;
   color: var(--dsw-alias-label-secondary, #61666b);
   transition: opacity 0.15s ease, width 0.15s ease;
 }
@@ -192,6 +213,13 @@
   color: var(--dsw-alias-label-primary, #0f1115);
 }
 
+.zoomControls button:focus-visible {
+  outline: var(--dsw-focus-ring-width, 2px) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary, #4176e6));
+  outline-offset: -2px;
+}
+
+/* At fit the pill collapses to the overview control; hovering expands it so
+   the zoom buttons and the 100% reset stay reachable. */
 .zoomControls.collapsed .zoomButton,
 .zoomControls.collapsed .zoomLevel {
   width: 0;
@@ -226,10 +254,10 @@
   border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary, #4176e6) 55%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, #ffffff) 92%, transparent);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+  box-shadow: var(--dsw-elevation-panel);
   color: var(--dsw-alias-state-business-primary, #4176e6);
   font-family: inherit;
-  font-size: 10px;
+  font-size: 10.5px;
   line-height: 1.4;
   white-space: nowrap;
   cursor: pointer;
@@ -241,12 +269,12 @@
 }
 
 .offscreenChipIn {
-  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 55%, transparent);
-  color: var(--dsw-alias-state-warn-primary, #d97706);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #f59e0b) 55%, transparent);
+  color: var(--dsw-alias-state-warn-primary, #f59e0b);
 }
 
 .offscreenChipIn:hover {
-  background: var(--dsw-alias-state-warn-tertiary, #fff4e5);
+  background: var(--dsw-alias-state-warn-tertiary, #fef5e7);
 }
 
 .offscreenArrow {

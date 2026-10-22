@@ -77,12 +77,15 @@ export function resolveNode(
 
   const bracket = svgLabel.match(/\[([^\]]*)\]\s*$/)
   const baseName = svgLabel.replace(/\s*\[[^\]]*\]\s*$/, '').trim()
+  const truncated = bracket !== null && bracket[1].includes('…')
   const ordinals = bracket === null
     ? []
     : bracket[1].split(',').map(part => part.trim()).filter(part => part !== '' && part !== '…')
 
   let members = analysis.collapsed.nodes.filter(node => node.label === baseName)
-  if (ordinals.length > 0) {
+  // A capped label (`…`) cannot name every member; use the whole same-name
+  // group instead of silently selecting only the six listed ordinals.
+  if (ordinals.length > 0 && !truncated) {
     const wanted = new Set(ordinals.map(ordinal => `p:${ordinal}`))
     const matched = members.filter(node => wanted.has(node.id))
     if (matched.length > 0) members = matched

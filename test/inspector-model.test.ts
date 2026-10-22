@@ -57,7 +57,7 @@ describe('resolveNode', () => {
   })
 
   it('reconstructs a merged node from its rendered ordinals', () => {
-    const { node, unresolved } = resolveNode('m:1', 'Beta [2,3]', analysis)
+    const { node, unresolved } = resolveNode('m:1', 'Beta[2,3]', analysis)
     assert.equal(node.id, 'm:1')
     assert.equal(node.label, 'Beta')
     assert.equal(node.state, 'FAILED')
@@ -65,11 +65,12 @@ describe('resolveNode', () => {
     assert.equal(unresolved, 2)
   })
 
-  it('ignores the ellipsis and falls back to the listed ordinals', () => {
-    const { node, unresolved } = resolveNode('m:2', 'Beta [2,…]', analysis)
+  it('uses the whole same-name group when the rendered ordinal list is truncated', () => {
+    const { node, unresolved, members } = resolveNode('m:2', 'Beta [2,…]', analysis)
     assert.equal(node.label, 'Beta')
     assert.equal(node.state, 'FAILED')
-    assert.equal(unresolved, 1)
+    assert.deepEqual(members.map(member => member.id), ['p:2', 'p:3'])
+    assert.equal(unresolved, 2)
   })
 })
 
@@ -77,8 +78,8 @@ describe('buildRows', () => {
   it('orders rows by state severity, then label', () => {
     const built = buildRows([
       { key: 'e1', dotId: 'p:1', label: 'Alpha', services: ['svc'] },
-      { key: 'e2', dotId: 'p:2', label: 'Beta [2]', services: ['other'] },
-      { key: 'e3', dotId: 'p:3', label: 'Beta [3]', services: ['other'] },
+      { key: 'e2', dotId: 'p:2', label: 'Beta[2]', services: ['other'] },
+      { key: 'e3', dotId: 'p:3', label: 'Beta[3]', services: ['other'] },
     ], analysis)
     assert.deepEqual(built.map(row => row.state), ['FAILED', 'PENDING', 'ACTIVE'])
     assert.deepEqual(built.map(row => row.neighbor.key), ['e2', 'e3', 'e1'])
@@ -87,7 +88,7 @@ describe('buildRows', () => {
   it('matches the local filter against names and services', () => {
     const built = buildRows([
       { key: 'e1', dotId: 'p:1', label: 'Alpha', services: ['svc'] },
-      { key: 'e2', dotId: 'p:2', label: 'Beta [2]', services: ['other'] },
+      { key: 'e2', dotId: 'p:2', label: 'Beta[2]', services: ['other'] },
     ], analysis)
     assert.equal(matchesNeighbor(built[0], 'beta'), true)
     assert.equal(matchesNeighbor(built[0], 'OTHER'), true)

@@ -12,9 +12,9 @@ One installable bundle ships three surfaces:
   exposing `analyze()` and `render()` over the gateway.
 - **host tool** (`@sleetdrop/dsh-plugin-topology/tool`): the model-facing
   `graph.render` tool, registering on `ctx.tools`.
-- **browser surface** (`dsh.client`): a global panel reachable from the sidebar
-  footer that renders the graph, metrics, legend, unresolved-dependency log, and
-  pan/zoom + format downloads.
+- **browser surface** (`dsh.client`): a global page reachable from the sidebar's
+  panel list that renders the graph, metrics, legend, unresolved-dependency log,
+  and pan/zoom + format downloads.
 
 ## Install
 
@@ -51,24 +51,24 @@ produce a shareable artifact. Use `json` to inspect or analyze the assembly.
 
 ## Screenshots
 
-The panel opens maximized by default and renders the live plugin/service
-topology as a zoomable Graphviz graph, with metrics, a color legend, and an
-unresolved-dependency table. The same panel is localized through the harness
-locale dictionaries:
+The page renders the live plugin/service topology as a zoomable Graphviz
+graph, with metrics, a color legend, and an unresolved-dependency table. The
+same view is localized through the harness locale dictionaries:
 
 - [Chinese (zh_CN)](docs/screenshots/panel-zh_CN.png)
 - [English (en_US)](docs/screenshots/panel-en_US.png)
-- [Right-side inspector (en_US)](docs/screenshots/inspector-en_US.png)
 
-## Browser panel
+## Browser page
 
-The trigger sits in `sidebar.footer.action` (a root-scope list slot, above
-Settings), visible with or without a selected session — the topology is
-runtime-global and needs no session context. The panel opens maximized by
-default (the Graphviz canvas needs the space); the header button restores a
-centered window. Same-named plugin instances merge into one node; each node's
-label carries the instance creation ordinals in brackets (`timer [1,9,23]`),
-assigned at startup and meaningful only within that run.
+The entry is a global-panel row in the sidebar (`sidebar.panellist`), visible
+with or without a selected session — the topology is runtime-global and needs
+no session context. The row addresses the `main` panel keyed `plugin-topology`,
+so the view occupies the center column under the harness's page chrome (on
+macOS it clears the window's traffic-light strip); leaving it is ordinary
+sidebar navigation, exactly like the Plugins page, with no window controls of
+its own. Same-named plugin instances merge into one node; each node's label
+carries the instance creation ordinals in brackets (`timer[1,9,23]`), assigned
+at startup and meaningful only within that run.
 
 ### Node inspection
 
@@ -76,9 +76,10 @@ The SVG renders inline, so the graph is interactive without baking anything
 into the export — a downloaded SVG still opens clean in any viewer.
 
 - **Hover** raises a light ring on the node, nothing else.
-- **Click** selects the node and opens a fixed inspector on the right (360px,
-  collapsible to a 40px rail). It shows the fiber `state`, module `source`, and
-  two independently scrolling sections: `→ Dependencies` and `← Dependents`.
+- **Click** selects the node and opens a fixed inspector on the right (360px
+  with a selection, 300px as an empty hint rail, collapsible to 40px). It shows
+  the fiber `state`, module `source`, and two independently scrolling sections:
+  `→ Dependencies` and `← Dependents`.
   Each row carries a state dot, the instance ordinals, and the mediating
   service(s); clicking a row selects and flies to that target.
 - **The inspector header** links the name to npm and carries `Frame all` per
@@ -86,19 +87,35 @@ into the export — a downloaded SVG still opens clean in any viewer.
   or service and shows `matching / total`; it never changes the graph
   highlight. Section heights follow their row counts, so one direction cannot
   push the other out of view.
-- **Breadcrumb + history**: the canvas keeps `Overview / … / current` at the top
-  left. `←`, `Backspace` or `⌘[` returns to the previous selection; the
+- **Breadcrumb + history**: the canvas keeps the visited path (`… / current`)
+  at the top left. There is no leading "Overview" crumb: fitting the whole graph
+  belongs to the zoom control, and a mode switch inside a path read like a
+  reset. `←`, `Backspace` or `⌘[` returns to the previous selection; the
   breadcrumb segments are clickable.
 - **Off-screen chips**: up to three far endpoints are surfaced at the padded
   viewport border; clicking one selects it.
-- **Search**: `/` focuses the toolbar search; it matches plugin names and
+- **Search**: `/` focuses the page-header search; it matches plugin names and
   services. Selecting a service opens the service inspector: providers,
   consumers, bus factor, critical/single-provider status, and the creation
   ordinals of both sides; clicking a row selects the plugin.
-- **Startup timeline**: a continuous creation-ordinal heat strip sits under the
-  inspector header. Neutral density is the background; charcoal hairlines mark
-  the selected instances, indigo dependencies, ochre dependents, and coral
-  late providers. Hover shows `#ordinal · plugin · state`.
+- **Startup timeline**: a creation-ordinal strip under the inspector header.
+  Every mark is the same 2px hairline: charcoal selected, indigo dependencies,
+  ochre dependents; no background band or separator. The strip itself is
+  static — 2px marks are too small to aim at — so hovering or focusing a
+  dependency/dependent row in the inspector pulses the matching mark on the
+  selected blink's 500ms rhythm and highlights its graph edge; the pulse repeats
+  until the pointer or focus leaves, and clicking the row selects it. The x-axis carries
+  creation order, so a dependency to the right of the selected mark is simply a
+  provider created later; there is no separate deferred state. There is no
+  density background. After a 320ms attention delay, the selected hairlines
+  blink twice at a 500ms cursor interval when the selection changes (disabled
+  under reduced motion).
+- **Color language**: red is reserved for real failures (FAILED, missing or
+  unresolved providers) and the node/table outline that flags them. ACTIVE is
+  green, FAILED red, LOADING/UNLOADING blue, PENDING neutral; indigo means
+  dependency (upstream) and ochre means dependent (downstream); creation order
+  is the timeline's x-axis, so later dependencies need no separate state or
+  colour. Cordis deferred loading is normal, not an error.
 - **Unresolved rows**: the unresolved table's plugin cell locates the node and
   opens the same inspector.
 
@@ -127,7 +144,7 @@ renderer (`dsh-client-ui-renderer` → `ctx.slots`), `dsh-client-store`
 (`ctx.remote`). The service reads Cordis internals (`root.registry`,
 `root.reflect.store`, fiber fields) that are not part of the stable public API
 — verify the installed harness satisfies the peer ranges before enabling the
-tool or panel.
+tool or page.
 
 DSH itself has no beta channel — it publishes `alpha` then `rc`. Follow its
 `next` dist-tag: `latest` is not a dependable pointer across the suite, because
@@ -150,7 +167,7 @@ releases only and skips the fast-moving `alpha` line.
 
 - A future Cordis that reshapes the internal registry/reflect surfaces breaks
   `snapshot()`; it does not degrade silently.
-- The browser panel requires a web profile (the `--patch` overlay covers only
+- The browser page requires a web profile (the `--patch` overlay covers only
   the node half).
 - Same-named instances merge in the display graph; per-instance identity stays
   available in the JSON export and the complete downloadable DOT.

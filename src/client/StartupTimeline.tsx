@@ -1,67 +1,21 @@
 import type { ReactNode } from 'react'
-import type { PluginNode } from '../types.ts'
-import type { StartupTimeline as TimelineData, TimelineInstance } from '../startup-timeline.ts'
+import { matchesTimelineHover, type StartupTimeline as TimelineData, type TimelineInstance } from '../startup-timeline.ts'
 import type { PluginTopologyLocaleKey } from './locales.ts'
 import css from './NodeInspector.module.css'
 
 export interface StartupTimelineProps {
   readonly timeline: TimelineData
   readonly mode: 'node' | 'service'
-  readonly onSelectPlugin: (plugin: PluginNode) => void
+  /** Plugin id of the inspector row currently under the pointer/focus. */
+  readonly hoveredPluginId: string | null
+  /** Merged-label fallback for a hovered row; timeline items carry instance ids. */
+  readonly hoveredPluginLabel: string | null
   readonly t: (key: PluginTopologyLocaleKey) => string
-}
-
-const BIN_COUNT = 32
-
-interface Bin {
-  readonly start: number
-  readonly end: number
-  readonly count: number
 }
 
 function percent(ordinal: number, min: number, max: number): number {
   if (max <= min) return 50
   return Math.max(0, Math.min(100, ((ordinal - min) / (max - min)) * 100))
-}
-
-function buildBins(timeline: TimelineData): Bin[] {
-  const bins: { start: number; end: number; count: number }[] = []
-  const span = Math.max(1, timeline.max - timeline.min + 1)
-  for (let index = 0; index < BIN_COUNT; index += 1) {
-    const start = timeline.min + Math.floor((span * index) / BIN_COUNT)
-    const rawEnd = timeline.min + Math.floor((span * (index + 1)) / BIN_COUNT) - 1
-    bins.push({ start, end: Math.max(start, rawEnd), count: 0 })
-  }
-  for (const item of timeline.global) {
-    const offset = (item.ordinal - timeline.min) / span
-    const index = Math.min(BIN_COUNT - 1, Math.max(0, Math.floor(offset * BIN_COUNT)))
-    bins[index].count += 1
-  }
-  return bins
-}
-
-/**
- * A continuous 1D heat strip: neutral density, no bins/gaps, no symbols.
- * Density is a soft gradient; the roles are vertical hairlines.
- */
-function densityGradient(bins: readonly Bin[]): string {
-  const maxCount = Math.max(1, ...bins.map(bin => bin.count))
-  // One stop per bin center: the gradient interpolates between them, so the
-  // result is continuous rather than 32 hard-edged blocks.
-  const stops: string[] = []
-  for (let index = 0; index < bins.length; index += 1) {
-    const position = ((index + 0.5) / bins.length) * 100
-    const alpha = Math.round(14 + (bins[index].count / maxCount) * 38)
-    const color = `color-mix(in srgb, var(--dsh-tl-heat, var(--dsw-alias-label-tertiary, #94a3b8)) ${alpha}%, transparent)`
-    stops.push(`${position.toFixed(2)}% ${color}`)
-  }
-  return `linear-gradient(90deg, ${stops.join(', ')})`
-}
-
-function titleOf(item: TimelineInstance, t: StartupTimelineProps['t']): string {
-  const parts = [`#${item.ordinal}`, item.plugin.label, item.state]
-  if (item.lateProvider) parts.push(t('startupLate'))
-  return parts.join(' · ')
 }
 
 function ordinalsLabel(ordinals: readonly number[]): string {
@@ -70,44 +24,51 @@ function ordinalsLabel(ordinals: readonly number[]): string {
   return `#${ordinals.slice(0, 3).join(', #')} …`
 }
 
-function roleClass(late: boolean, down: boolean): string {
-  if (late) return `${css.timelineLine} ${css.timelineLineLate}`
+function roleClass(down: boolean): string {
   return down ? `${css.timelineLine} ${css.timelineLineDown}` : `${css.timelineLine} ${css.timelineLineUp}`
 }
 
 /**
- * Continuous startup-order strip:
+ * Static startup-order strip: one uniform row of 2px hairlines on a plain band.
  *
- *   key: ● selected #133   │ dependency   │ dependent   │ late   (above, not data)
+ *   key: ● selected #133   │ dependency   │ dependent   (above, not data)
  *   ┌──────────────────────────────────────────────────────────────┐
- *   │▒▒▒▒▒░ neutral density gradient ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│
+ *   │          │      │      │          │      │       │           │
  *   └──────────────────────────────────────────────────────────────┘
  *
- * The neutral heat encodes every instance; role hairlines encode the selected
- * node, its dependencies (blue), dependents (amber) and late providers (red).
- * No triangles, no segmented bars, no legend below the band.
+ * The strip has no hover target, tooltip or click of its own: 2px marks are
+ * far too small to aim at. The inspector's text rows are the target; hovering
+ * or focusing one pulses the matching mark (and highlights the graph edge),
+ * and clicking the row selects it. All marks share one height and width; only
+ * the role colour differs. A dependency to the right of the selected mark was
+ * simply created later: the x-axis carries that timing, so there is no
+ * separate deferred state. When the selection changes the selected hairlines
+ * wait for the eye to reach the inspector, then blink twice at a
+ * terminal-cursor rhythm.
  */
-export function StartupTimeline({ timeline, mode, onSelectPlugin, t }: StartupTimelineProps): ReactNode {
+export function StartupTimeline({
+  timeline, mode, hoveredPluginId, hoveredPluginLabel, t,
+}: StartupTimelineProps): ReactNode {
   if (timeline.total === 0) return null
 
-  const bins = buildBins(timeline)
   const selectedOrdinals = [...new Set(timeline.selected.map(item => item.ordinal))].sort((a, b) => a - b)
+  // Remount the selected hairlines when the selected set changes, so the
+  // blink restarts on a selection change and not on hover/direction/theme
+  // re-renders (remounting the inspector also replays it).
+  const selectedIdentity = timeline.selected.map(item => `${item.plugin.id}:${item.ordinal}`).join('|')
   const upMarks = mode === 'node' ? timeline.dependencies : timeline.service?.providers ?? []
   const downMarks = mode === 'node' ? timeline.dependents : timeline.service?.consumers ?? []
-  const hasLate = timeline.lateProviders.length > 0
 
-  const hit = (item: TimelineInstance, down: boolean): ReactNode => (
-    <button
+  const isHovered = (item: TimelineInstance): boolean =>
+    matchesTimelineHover(item.plugin, hoveredPluginId, hoveredPluginLabel)
+
+  const mark = (item: TimelineInstance, down: boolean): ReactNode => (
+    <span
       key={`${down ? 'down' : 'up'}:${item.plugin.id}:${item.ordinal}`}
-      type="button"
-      className={css.timelineHit}
+      className={`${roleClass(down)}${isHovered(item) ? ` ${css.timelineLineHover}` : ''}`}
       style={{ left: `${percent(item.ordinal, timeline.min, timeline.max)}%` }}
-      title={titleOf(item, t)}
-      aria-label={titleOf(item, t)}
-      onClick={() => { onSelectPlugin(item.plugin) }}
-    >
-      <span className={roleClass(item.lateProvider, down)} aria-hidden />
-    </button>
+      aria-hidden
+    />
   )
 
   return (
@@ -134,12 +95,6 @@ export function StartupTimeline({ timeline, mode, onSelectPlugin, t }: StartupTi
               <span className={`${css.timelineKeySwatch} ${css.timelineKeyDown}`} aria-hidden />
               {t('startupDependent')}
             </span>
-            {hasLate ? (
-              <span className={`${css.timelineKeyItem} ${css.timelineKeyLate}`}>
-                <span className={`${css.timelineKeySwatch} ${css.timelineKeyLateMark}`} aria-hidden />
-                {t('startupLate')}
-              </span>
-            ) : null}
           </>
         ) : (
           <>
@@ -155,19 +110,15 @@ export function StartupTimeline({ timeline, mode, onSelectPlugin, t }: StartupTi
         )}
       </div>
 
-      <div
-        className={css.timelineBand}
-        style={{ backgroundImage: densityGradient(bins) }}
-        title={`${timeline.total} ${t('startupInstances')}`}
-      >
-        {upMarks.map(item => hit(item, false))}
-        {downMarks.map(item => hit(item, true))}
+      <div className={css.timelineBand} aria-hidden="true">
+        {upMarks.map(item => mark(item, false))}
+        {downMarks.map(item => mark(item, true))}
         {selectedOrdinals.map(ordinal => (
           <span
-            key={`selected:${ordinal}`}
+            key={`${selectedIdentity}:${ordinal}`}
             className={css.timelineLineSelected}
             style={{ left: `${percent(ordinal, timeline.min, timeline.max)}%` }}
-            title={`#${ordinal} · ${t('startupSelected')}`}
+            aria-hidden
           />
         ))}
       </div>

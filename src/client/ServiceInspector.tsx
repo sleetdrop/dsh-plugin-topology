@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { IconChevronDownOutline14, IconCloseOutline16 } from './icons.tsx'
+import { IconChevronDownOutlineRegular, IconCloseOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PluginNode, PluginState, TopologyAnalysis } from '../types.ts'
 import { inspectService } from '../service-model.ts'
 import { buildStartupTimeline, pluginOrdinals } from '../startup-timeline.ts'
@@ -21,6 +22,7 @@ export interface ServiceInspectorProps {
 function stateDotClass(state: PluginState): string {
   if (state === 'ACTIVE') return `${css.stateDot} ${css.stateActiveDot}`
   if (state === 'FAILED') return `${css.stateDot} ${css.stateFailedDot}`
+  if (state === 'LOADING' || state === 'UNLOADING') return `${css.stateDot} ${css.stateLoadingDot}`
   if (state === 'PENDING') return `${css.stateDot} ${css.statePendingDot}`
   return `${css.stateDot} ${css.stateOtherDot}`
 }
@@ -40,6 +42,8 @@ export function ServiceInspector({
   serviceId, analysis, collapsed, onToggleCollapsed, onClose, onSelectPlugin, t,
 }: ServiceInspectorProps): ReactNode {
   const inspection = inspectService(analysis, serviceId)
+  const [hoveredPlugin, setHoveredPlugin] = useState<PluginNode | null>(null)
+  useEffect(() => { setHoveredPlugin(null) }, [serviceId])
 
   if (collapsed) {
     return (
@@ -51,9 +55,9 @@ export function ServiceInspector({
           aria-label={t('inspectorExpand')}
           title={t('inspectorExpand')}
         >
-          <IconChevronDownOutline14 size={12} className={css.chevronLeft} />
+          <IconChevronDownOutlineRegular size={12} className={css.chevronLeft} />
         </button>
-        <span className={css.collapsedInitial}>#</span>
+        <span className={css.collapsedTitle} aria-hidden>{t('inspectorTitle')}</span>
       </aside>
     )
   }
@@ -71,10 +75,10 @@ export function ServiceInspector({
               aria-label={t('inspectorCollapse')}
               title={t('inspectorCollapse')}
             >
-              <IconChevronDownOutline14 size={12} className={css.chevronRight} />
+              <IconChevronDownOutlineRegular size={12} className={css.chevronRight} />
             </button>
             <button type="button" className={css.iconButton} onClick={onClose} aria-label={t('popoverClose')} title={t('popoverClose')}>
-              <IconCloseOutline16 size={12} />
+              <IconCloseOutlineRegular size={12} />
             </button>
           </div>
         </div>
@@ -105,6 +109,10 @@ export function ServiceInspector({
                 type="button"
                 className={css.neighbor}
                 onClick={() => { onSelectPlugin(plugin) }}
+                onMouseEnter={() => { setHoveredPlugin(plugin) }}
+                onMouseLeave={() => { setHoveredPlugin(null) }}
+                onFocus={() => { setHoveredPlugin(plugin) }}
+                onBlur={() => { setHoveredPlugin(null) }}
                 title={`${plugin.label}${ordinals.length > 0 ? ` · #${ordinals.join(', #')}` : ''}`}
               >
                 <span className={stateDotClass(plugin.state)} aria-hidden />
@@ -140,10 +148,10 @@ export function ServiceInspector({
               aria-label={t('inspectorCollapse')}
               title={t('inspectorCollapse')}
             >
-              <IconChevronDownOutline14 size={12} className={css.chevronRight} />
+              <IconChevronDownOutlineRegular size={12} className={css.chevronRight} />
             </button>
             <button type="button" className={css.iconButton} onClick={onClose} aria-label={t('popoverClose')} title={t('popoverClose')}>
-              <IconCloseOutline16 size={12} />
+              <IconCloseOutlineRegular size={12} />
             </button>
           </div>
         </div>
@@ -157,7 +165,13 @@ export function ServiceInspector({
           <span>{t('serviceBusFactor')} {inspection.busFactor}</span>
         </div>
       </header>
-      <StartupTimeline timeline={timeline} mode="service" onSelectPlugin={onSelectPlugin} t={t} />
+      <StartupTimeline
+        timeline={timeline}
+        mode="service"
+        hoveredPluginId={hoveredPlugin?.id ?? null}
+        hoveredPluginLabel={hoveredPlugin?.label ?? null}
+        t={t}
+      />
       <div className={css.sections}>
         {renderGroup(t('providersTitle'), inspection.providers, t('serviceNoProviders'))}
         {renderGroup(t('consumersTitle'), inspection.consumers, t('serviceNoConsumers'))}
