@@ -200,3 +200,4 @@ each was validated against (Git tags carry a `v` prefix, npm versions do not).
 | `0.5.0` | `0.2.0-rc.2` | node detail popover + direction-scoped highlight; dark-theme color tokens; peer refresh |
 | `0.6.0` | `0.2.0-rc.2` | Right-side inspector + breadcrumb/chips/search; quality gates (CI, drift checks, locale/inspector tests); no DSH source changes |
 | `0.7.0` | `0.2.1-rc.2` | Service inspector, missing services, startup timeline; live topology doctor (loaded-only); DSH 0.2.1-rc.2 peer refresh |
+| `0.8.0` | `0.2.1-rc.2` | Global main page on DSH layout/primitives; static 2px startup strip; row-driven hover pulse; merged groups; no DSH peer change |
