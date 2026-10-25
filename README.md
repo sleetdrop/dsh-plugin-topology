@@ -187,8 +187,10 @@ compatibility) and the locale/inspector model tests; CI runs the same matrix on
 Node 22 and 24.
 
 The `dsh.client` browser bundle inlines everything except the shell's frozen
-platform-module rows (`react`, `react/jsx-runtime`, and
-`@deepseek-ai/dsh-client-store`), which every supported harness shell serves.
+platform-module rows it requires (`react`, `react/jsx-runtime`,
+`@deepseek-ai/dsh-client-store`, and `@deepseek-ai/dsh-client-ui-primitives`),
+which every supported harness shell serves. `scripts/check-client-externals.mjs`
+fails `pnpm check` if the bundle requires anything else.
 
 See [NEXT-STEPS.md](NEXT-STEPS.md) for planned renderer improvements and
 [docs/QUALITY.md](https://github.com/sleetdrop/dsh-plugin-topology/blob/main/docs/QUALITY.md) for the quality/drift workstream.
