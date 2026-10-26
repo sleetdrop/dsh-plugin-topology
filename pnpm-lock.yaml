@@ -167,8 +167,8 @@ importers:
   .:
     dependencies:
       '@hpcc-js/wasm-graphviz':
-        specifier: ^1.29.2
-        version: 1.29.2
+        specifier: ^1.30.0
+        version: 1.30.0
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -465,8 +465,8 @@ packages:
   '@deepseek-ai/schemastery@3.18.5':
     resolution: {integrity: sha512-Mnobvqf9rHsZYv4g5edj5ddxS1oF1kIdSlz0DunUgnY3LWG5F26MqvH3YOOsSaodCgyzJ16OMN9O99/s5Crtdw==}
 
-  '@hpcc-js/wasm-graphviz@1.29.2':
-    resolution: {integrity: sha512-AkArBAZERT5OxH52/+kvCHB07cZ6ZNd9GnOvjw+S880bR88D6i27XfK6xj4dBhUDxNA2QPPMdgEcky3x4TJ3KA==}
+  '@hpcc-js/wasm-graphviz@1.30.0':
+    resolution: {integrity: sha512-T20IKosOZuex2qV049fQokVJy2MWv8w9Md5V/4mRKCXDf49fBCR50VD1yBlPYHaQlHPsFGRdqXN//r59vZliWQ==}
 
   '@oxc-project/types@0.154.0':
     resolution: {integrity: sha512-KYOUGQFlLWR+s4QMV2Q9ko38TZm7EdO87Qm7rvZLqk/webse/cDjtyxKhg/47l0byCbs/k46LT8qc4PKjAikzA==}
@@ -1253,7 +1253,7 @@ snapshots:
       '@deepseek-ai/cosmokit': 1.8.6
       '@standard-schema/spec': 1.1.0
 
-  '@hpcc-js/wasm-graphviz@1.29.2': {}
+  '@hpcc-js/wasm-graphviz@1.30.0': {}
 
   '@oxc-project/types@0.154.0': {}
 
