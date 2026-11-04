@@ -231,3 +231,4 @@ each was validated against (Git tags carry a `v` prefix, npm versions do not).
 | `0.7.0` | `0.2.1-rc.2` | Service inspector, missing services, startup timeline; live topology doctor (loaded-only); DSH 0.2.1-rc.2 peer refresh |
 | `0.8.0` | `0.2.1-rc.2` | Global main page on DSH layout/primitives; static 2px startup strip; row-driven hover pulse; merged groups; no DSH peer change |
 | `0.9.0` | `0.2.1-rc.2` | Breaking: tool renamed `graph_render` (dotted name rejected by the API, broke every session); mass opacity transition removed (desktop flash); theme detection reads `data-ds-dark-theme`; subtle node fill |
+| `0.9.1` | `0.2.2-rc.1` | DSH compat: cordis `4.1.0` renamed `Fiber.store` → `Fiber.committed` and moved the provider fiber from `Impl.fiber` to `Impl.ctx.fiber`; `snapshot()` adapted; peer/dev refresh onto the `0.2.2-rc.1` / `cordis@^4.1.0` line |
