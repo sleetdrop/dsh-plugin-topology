@@ -117,7 +117,7 @@ export class PluginTopologyService extends TypertRemoteService {
       const serviceId = `s:${scope}:${impl.name}`
       implIds.set(impl, serviceId)
       nodes.push({ id: serviceId, kind: 'service', label: impl.name, scope })
-      const providerId = fiberIds.get(impl.fiber)
+      const providerId = fiberIds.get(impl.ctx.fiber)
       if (providerId !== undefined) {
         edges.push({ source: providerId, target: serviceId, kind: 'provides', service: impl.name })
       }
@@ -126,7 +126,7 @@ export class PluginTopologyService extends TypertRemoteService {
     // Inject edges, or unresolved declarations for dependencies with no active provider.
     for (const [fiber, id] of fiberIds) {
       for (const name of Object.keys(fiber.inject)) {
-        const impl = fiber.store?.[name]
+        const impl = fiber.committed?.[name]
         if (impl === undefined) {
           unresolved.push({ plugin: id, service: name, state: fiberStateName(fiber.state as number) })
           continue
