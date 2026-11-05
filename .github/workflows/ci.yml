@@ -13,6 +13,15 @@ concurrency:
 permissions:
   contents: read
 
+# The `quality` job must always exist for both matrix nodes: `main` branch
+# protection lists "quality (node 22)" and "quality (node 24)" as required
+# status checks, and a `paths-ignore` that removes the job for docs-only PRs
+# would leave those contexts absent and the PR stuck on "Expected — waiting for
+# status". So the job is never skipped; instead a cheap path filter inside it
+# decides whether to run the full `pnpm check` or, for a docs-only change, the
+# lighter `pnpm check:compat` (which guards the README / RELEASING / peer sync
+# — exactly what a docs change can break). Anything touching dependencies,
+# the workflow itself, or tooling falls through to the full build.
 jobs:
   quality:
     name: quality (node ${{ matrix.node }})
@@ -23,10 +32,30 @@ jobs:
         node: [22, 24]
     steps:
       - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            docs-only:
+              - 'README.md'
+              - 'docs/**'
+              - '**/*.md'
       - uses: pnpm/action-setup@v6.1.0
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check
+      # Docs-only change: install (no-op when nothing dependency-related changed,
+      # cheap from the pnpm cache), then guard the compatibility table and peer
+      # sync and stop — a markdown edit cannot affect the compiled artifact.
+      - name: Docs-only — verify compatibility sync
+        if: steps.filter.outputs.docs-only == 'true'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run check:compat
+      # Anything else (code, deps, workflow, tooling): full pipeline.
+      - name: Install and full check
+        if: steps.filter.outputs.docs-only != 'true'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm check
