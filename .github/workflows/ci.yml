@@ -10,9 +10,9 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# `dorny/paths-filter` lists changed files via the GitHub API on `pull_request`
-# runs, so it needs `pull-requests: read` in addition to the code checkout
-# (`contents: read`). Without it the change-detection step fails.
+# `dorny/paths-filter` lists changed files via the GitHub REST API on
+# `pull_request` runs, so it needs `pull-requests: read` in addition to the code
+# checkout (`contents: read`). Without it change detection fails outright.
 permissions:
   contents: read
   pull-requests: read
@@ -24,12 +24,23 @@ permissions:
 # for status". So the job is never removed; a path filter inside it only decides
 # how much of its own steps to run.
 #
-# The filter's `code` set names everything that is NOT a pure doc. The fast path
-# runs only when `code` is EMPTY, i.e. the change is README/docs markdown alone.
-# This is the correct "all changes are docs" test: `dorny/paths-filter` reports
-# the filter as true when ANY changed file matches it, so a `docs`-only filter
-# would misfire on a PR that mixes a doc edit with a source change and wrongly
-# skip the full build. Inverting it to "no code file changed" avoids that hole.
+# The filter is a DOC BLACKLIST: `nonDocs` matches every changed file that is
+# not documentation, and it is written as "all paths, minus the doc patterns".
+# Only the doc patterns (`README.md`, `**/*.md`, `docs/**`) are maintained, so a
+# file type we have never seen before — a new top-level config, a new directory
+# — automatically counts as a non-doc change and gets the full pipeline. A
+# whitelist of code paths would silently under-check such a file.
+#
+# Two details make this work:
+#   * `predicate-quantifier: 'some-with-excludes'` (requires paths-filter
+#     v4.0.3+) is what lets a single filter express "matches `**` but none of
+#     the negated doc patterns".
+#   * `dot: true` inside the action means `**` also matches `.github/**` and
+#     `.gitignore`, so workflow edits are never mistaken for docs.
+#
+# The `any` filter exists only to catch "no changed files were detected" (a
+# `workflow_dispatch` run with nothing to diff, for example). Zero changes must
+# fall through to the full pipeline instead of silently taking the light path.
 jobs:
   quality:
     name: quality (node ${{ matrix.node }})
@@ -42,48 +53,35 @@ jobs:
       - uses: actions/checkout@v7
       - name: Detect scope of changes
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
+          predicate-quantifier: 'some-with-excludes'
           filters: |
-            code:
-              - 'src/**'
-              - 'lib-test/**'
-              - 'test/**'
-              - 'scripts/**'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
-              - 'tsconfig*.json'
-              - 'tsdown.config.ts'
-              - '.github/**'
-              - 'lib/**'
-              - '*.mjs'
-              - '*.cjs'
-              - '*.ts'
-              - '*.tsx'
-              - 'cordis.patch.yml'
-              - 'overlay.example.yml'
-              - 'NEXT-STEPS.md'
-              - 'LICENSE'
-              - '.gitignore'
+            any:
+              - '**'
+            nonDocs:
+              - '**'
+              - '!README.md'
+              - '!**/*.md'
+              - '!docs/**'
       - uses: pnpm/action-setup@v6.1.0
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
-      # Pure README/docs change: install (no-op from the pnpm cache), verify the
-      # compatibility sync — the one thing a doc edit can desync — and stop. A
-      # markdown edit cannot affect the compiled artifact.
+      # Pure README/docs change: install (a no-op from the pnpm cache), verify
+      # the compatibility sync — the one gate a doc edit can desync — and stop.
+      # Markdown cannot affect the compiled artifact.
       - name: Docs-only — verify compatibility sync
-        if: steps.filter.outputs.code == 'false'
+        if: steps.filter.outputs.nonDocs == 'false' && steps.filter.outputs.any_count != '0'
         run: |
           pnpm install --frozen-lockfile
           pnpm run check:compat
-      # Anything touching source, deps, tooling, or the workflow itself: full
-      # pipeline (this includes the workflow file, so CI-config edits always
-      # rebuild, and a README+src PR falls through here too).
+      # Exact complement of the step above: any non-doc file changed, or no
+      # changes detected at all. This includes a README+source PR, a lockfile
+      # bump, and every edit to this workflow.
       - name: Install and full check
-        if: steps.filter.outputs.code == 'true'
+        if: steps.filter.outputs.nonDocs != 'false' || steps.filter.outputs.any_count == '0'
         run: |
           pnpm install --frozen-lockfile
           pnpm check
