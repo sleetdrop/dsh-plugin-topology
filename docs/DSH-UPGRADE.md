@@ -6,6 +6,20 @@ This document provides orientation, not a checklist. Adapt freely.
 
 ## Orientation
 
+**Instrumentation strategy (2026-11)**: this plugin exists to *observe the
+assembly itself* — a runtime-global view of the live Cordis fiber tree and its
+service dependency graph. That requires reading Cordis internals that are not
+part of its stable public API, and that is a **deliberate design commitment,
+not a risk to be engineered around**. We follow the installed `@deepseek-ai/cordis`
+version closely and absorb its internal reworks as a normal maintenance cost —
+each reshuffle of `root.registry` / `root.reflect.store` / fiber fields lands as
+a small `snapshot()` patch, with the exact field mapping recorded in the
+Historical Breakages table below. No isolation layer is maintained between
+`snapshot()` and Cordis internals: a facade would not prevent the field renames
+(it still must name them), and today the reads already live in one method, so
+the cheapest future-churn insurance is keeping the mapping notes current, not
+adding indirection.
+
 **What this plugin touches in DSH**: Cordis internals (`root.registry`,
 `root.reflect.store`, fiber fields) for snapshot; `dsh-typert-protocol` for
 host and client Remote descriptors; `dsh-tools` for tool registration;
@@ -24,9 +38,12 @@ contribution) and `src/typert.ts` (host-side typert manifest) carry
 against `TypertCodec`, so it can silently drift. Always check both when codec
 types change.
 
-**Cordis internals are silent risks**: `snapshot()` reads non-public Cordis
-APIs. These breakages produce no type errors — only wrong data at runtime.
-After any cordis bump, verify snapshot output even if the build passes clean.
+**Cordis internals stay an operational caution**: because `snapshot()` reads
+non-public Cordis APIs (by design — see the strategy note above), an internal
+change can in principle corrupt snapshot *output* at runtime even when the build
+passes clean. The insulating good news is that field renames/removals surface as
+bare `TS2339` errors (`fiber.store`, `impl.fiber` did in 4.1.0). Still, after any
+cordis bump, verify snapshot output even if the build passes clean.
 
 **Theme tokens are silent risks too**: the panel styles itself against DSH
 design tokens, and a token that does not exist just resolves to whatever
