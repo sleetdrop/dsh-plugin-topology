@@ -142,9 +142,10 @@ the client now runs on the Cordis `Context` augmented by the shell baseline
 renderer (`dsh-client-ui-renderer` → `ctx.slots`), `dsh-client-store`
 (`defineStore`), `dsh-client-locale` (`ctx.locale`), and `dsh-api-remotes`
 (`ctx.remote`). The service reads Cordis internals (`root.registry`,
-`root.reflect.store`, fiber fields) that are not part of the stable public API
-— verify the installed harness satisfies the peer ranges before enabling the
-tool or page.
+`root.reflect.store`, fiber fields) to observe the assembly itself — those
+surfaces are deliberately not part of the stable public API, so pick a plugin
+version whose target DSH matches your harness, and verify the installed harness
+satisfies the peer ranges before enabling the tool or page.
 
 DSH itself has no beta channel — it publishes `alpha` then `rc`. Follow its
 `next` dist-tag: `latest` is not a dependable pointer across the suite, because
@@ -168,8 +169,13 @@ releases only and skips the fast-moving `alpha` line.
 
 ## Known Limitations
 
-- A future Cordis that reshapes the internal registry/reflect surfaces breaks
-  `snapshot()`; it does not degrade silently.
+- This plugin deliberately reads Cordis internals (`root.registry`,
+  `root.reflect.store`, fiber fields) to observe the live assembly itself —
+  that is the point of the project, and those internal surfaces are not part of
+  Cordis's stable public API. A future Cordis that reshapes them breaks
+  `snapshot()` and we follow the installed Cordis version with each upgrade
+  rather than shimming around it; the breakage surfaces as a bare type error and
+  the field mapping is logged in `docs/DSH-UPGRADE.md`.
 - The browser page requires a web profile (the `--patch` overlay covers only
   the node half).
 - Same-named instances merge in the display graph; per-instance identity stays
