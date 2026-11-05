@@ -10,18 +10,26 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# `dorny/paths-filter` lists changed files via the GitHub API on `pull_request`
+# runs, so it needs `pull-requests: read` in addition to the code checkout
+# (`contents: read`). Without it the change-detection step fails.
 permissions:
   contents: read
+  pull-requests: read
 
 # The `quality` job must always exist for both matrix nodes: `main` branch
 # protection lists "quality (node 22)" and "quality (node 24)" as required
-# status checks, and a `paths-ignore` that removes the job for docs-only PRs
-# would leave those contexts absent and the PR stuck on "Expected — waiting for
-# status". So the job is never skipped; instead a cheap path filter inside it
-# decides whether to run the full `pnpm check` or, for a docs-only change, the
-# lighter `pnpm check:compat` (which guards the README / RELEASING / peer sync
-# — exactly what a docs change can break). Anything touching dependencies,
-# the workflow itself, or tooling falls through to the full build.
+# status checks. Skipping the whole job for docs-only PRs (`paths-ignore`)
+# would leave those two contexts absent and the PR stuck on "Expected — waiting
+# for status". So the job is never removed; a path filter inside it only decides
+# how much of its own steps to run.
+#
+# The filter's `code` set names everything that is NOT a pure doc. The fast path
+# runs only when `code` is EMPTY, i.e. the change is README/docs markdown alone.
+# This is the correct "all changes are docs" test: `dorny/paths-filter` reports
+# the filter as true when ANY changed file matches it, so a `docs`-only filter
+# would misfire on a PR that mixes a doc edit with a source change and wrongly
+# skip the full build. Inverting it to "no code file changed" avoids that hole.
 jobs:
   quality:
     name: quality (node ${{ matrix.node }})
@@ -32,30 +40,50 @@ jobs:
         node: [22, 24]
     steps:
       - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@v3
+      - name: Detect scope of changes
         id: filter
+        uses: dorny/paths-filter@v3
         with:
           filters: |
-            docs-only:
-              - 'README.md'
-              - 'docs/**'
-              - '**/*.md'
+            code:
+              - 'src/**'
+              - 'lib-test/**'
+              - 'test/**'
+              - 'scripts/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'tsconfig*.json'
+              - 'tsdown.config.ts'
+              - '.github/**'
+              - 'lib/**'
+              - '*.mjs'
+              - '*.cjs'
+              - '*.ts'
+              - '*.tsx'
+              - 'cordis.patch.yml'
+              - 'overlay.example.yml'
+              - 'NEXT-STEPS.md'
+              - 'LICENSE'
+              - '.gitignore'
       - uses: pnpm/action-setup@v6.1.0
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
-      # Docs-only change: install (no-op when nothing dependency-related changed,
-      # cheap from the pnpm cache), then guard the compatibility table and peer
-      # sync and stop — a markdown edit cannot affect the compiled artifact.
+      # Pure README/docs change: install (no-op from the pnpm cache), verify the
+      # compatibility sync — the one thing a doc edit can desync — and stop. A
+      # markdown edit cannot affect the compiled artifact.
       - name: Docs-only — verify compatibility sync
-        if: steps.filter.outputs.docs-only == 'true'
+        if: steps.filter.outputs.code == 'false'
         run: |
           pnpm install --frozen-lockfile
           pnpm run check:compat
-      # Anything else (code, deps, workflow, tooling): full pipeline.
+      # Anything touching source, deps, tooling, or the workflow itself: full
+      # pipeline (this includes the workflow file, so CI-config edits always
+      # rebuild, and a README+src PR falls through here too).
       - name: Install and full check
-        if: steps.filter.outputs.docs-only != 'true'
+        if: steps.filter.outputs.code == 'true'
         run: |
           pnpm install --frozen-lockfile
           pnpm check
