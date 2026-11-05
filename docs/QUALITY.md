@@ -120,6 +120,25 @@ listed but not yet mined.
 On a DSH upgrade, bump that devDependency with the other DSH packages; the audit
 then follows the new theme automatically.
 
+## CI scope
+
+The `quality` job is never skipped. Branch protection requires both
+`quality (node 22)` and `quality (node 24)` on every PR, so a job-level
+`paths-ignore` would leave those contexts missing and block a docs-only merge
+on "Expected — waiting for status". Instead `dorny/paths-filter@v4` decides how
+much of the job runs:
+
+- **docs-only** (`README.md`, `**/*.md`, `docs/**` and nothing else) runs
+  `pnpm check:compat` only — the one gate a documentation edit can desync.
+- **everything else** runs the full `pnpm check`.
+
+The filter is a doc **blacklist**: `nonDocs` is "all paths, minus the doc
+patterns". Keep it that way. A whitelist of code paths reads as equivalent but
+is fail-open — a new top-level config or a new source directory matches nothing
+and would take the light path silently. Zero detected changes (a
+`workflow_dispatch` run with nothing to diff) also falls through to the full
+pipeline.
+
 ## Definition of done
 
 A change is done when all of these are true, not when the build "looks green":
