@@ -3,6 +3,16 @@
 Planned directions for the plugin topology renderer. None of these are
 committed API; they are design notes for future releases.
 
+## Direction notes (2026-11) — observatory, not debugger
+
+The 2026-11 discussion note repositions the project as an **observatory** of
+the Cordis assembly rather than a debugger, records the live experiments behind
+that call, and collects the open visual directions (macro constellation, growth
+replay, living map, cinematic mode):
+[`docs/design/observatory.md`](https://github.com/sleetdrop/dsh-plugin-topology/blob/main/docs/design/observatory.md).
+It is a discussion record, not a committed plan — pick one ember when the next
+direction is chosen.
+
 ## 0.8.0 — global page + static startup strip (done)
 
 The topology is now a global main page with the shared DSH layout and
