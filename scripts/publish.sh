@@ -46,6 +46,9 @@ VERSION="$(node -e "console.log(require('./package.json').version)")"
 #    move `latest`, or every user's next install would pick up an unverified
 #    artifact. Default it to `next`; an explicit argument overrides (e.g.
 #    `./scripts/publish.sh latest` once the smoke test passes).
+#    A maintained older DSH line publishes under its line tag
+#    (`./scripts/publish.sh dsh-0.2.1`), leaving `latest` on the newest
+#    line's release; see docs/COMPAT-LINES.md.
 TAG="${1:-}"
 if [ -z "$TAG" ]; then
   case "$VERSION" in
@@ -53,8 +56,8 @@ if [ -z "$TAG" ]; then
     *) TAG=latest ;;
   esac
 fi
-if [ "$TAG" != "latest" ] && [ "$TAG" != "next" ]; then
-  echo "error: unsupported dist-tag '$TAG' (expected latest or next)" >&2
+if ! printf '%s' "$TAG" | grep -Eq '^[a-z0-9][a-z0-9._-]*$'; then
+  echo "error: unsupported dist-tag '$TAG' (expected an npm tag such as latest, next, or dsh-0.2.1)" >&2
   exit 1
 fi
 if [ "$TAG" = "latest" ] && [ "$VERSION" != "${VERSION%%-*}" ]; then

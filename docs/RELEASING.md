@@ -53,6 +53,34 @@ branches are deleted automatically. The full rules agents must follow are in
 - tags are not branches: tag the squash-merged release commit after the PR
   lands.
 
+## Multi-line maintenance
+
+One plugin build targets exactly one DSH line (peer ranges + code surfaces).
+Users on an older line need a maintained version of their own. The full model
+— branch layout, version numbering, the release matrix, the validation
+harness, and how to answer "no panel on DSH $V" reports — lives in
+[`COMPAT-LINES.md`](COMPAT-LINES.md). The short version:
+
+- `main` tracks the newest DSH line. When a release targets a newer line than
+  the previous release, cut `compat/dsh-<previous-line>.x` from the last
+  release commit that targeted the previous line (v0.9.1 → `compat/dsh-0.2.1.x`
+  from v0.9.0).
+- Compat branches take **patch-only** releases (features land on `main`),
+  keep the line's peer pins, and are validated with
+  `node scripts/validate-dsh.mjs --dsh <line rc> --plugin .` before every
+  release — the same no-tag-without-verification rule as main.
+- The README compatibility matrix is the single mapping of plugin version →
+  validated DSH release, across every branch. Version numbers are one
+  strictly increasing counter; never reuse a published number.
+- Publish a compat release under its line tag (`./scripts/publish.sh
+  dsh-0.2.1`) so `latest` keeps pointing at the newest line's release; see
+  the selection rules in [`COMPAT-LINES.md`](COMPAT-LINES.md).
+- A same-line rc drift (user on `0.2.1-rc.5`, validated row `0.2.1-rc.2`) is
+  resolved by reproducing with the harness, then either diagnosing the
+  environment (green) or releasing a compat patch (red). A validation-only
+  patch release (precedent: `0.3.1`) is legitimate when the user base sits on
+  the drifted rc.
+
 ## One release, end to end
 
 Pick a new plugin version using plain semver (e.g. `0.2.0`), and the DSH rc you
