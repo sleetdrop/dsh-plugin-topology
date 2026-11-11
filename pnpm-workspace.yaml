@@ -32,3 +32,5 @@ minimumReleaseAgeExclude:
   - '@deepseek-ai/dsh-client-ui-primitives@0.2.2-rc.1'
   - '@deepseek-ai/dsh-client-ui-theme@0.2.2-rc.1'
   - '@deepseek-ai/cordis@4.1.0'
+  - '@puppeteer/browsers@3.2.7'
+  - puppeteer-core@25.17.0
