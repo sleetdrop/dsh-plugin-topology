@@ -72,6 +72,9 @@ harness, and how to answer "no panel on DSH $V" reports — lives in
 - The README compatibility matrix is the single mapping of plugin version →
   validated DSH release, across every branch. Version numbers are one
   strictly increasing counter; never reuse a published number.
+- Publish a compat release under its line tag (`./scripts/publish.sh
+  dsh-0.2.1`) so `latest` keeps pointing at the newest line's release; see
+  the selection rules in [`COMPAT-LINES.md`](COMPAT-LINES.md).
 - A same-line rc drift (user on `0.2.1-rc.5`, validated row `0.2.1-rc.2`) is
   resolved by reproducing with the harness, then either diagnosing the
   environment (green) or releasing a compat patch (red). A validation-only
