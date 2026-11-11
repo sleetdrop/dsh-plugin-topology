@@ -85,7 +85,8 @@
     "check:compat": "node scripts/check-compat.mjs",
     "prepare": "pnpm run build",
     "prepublishOnly": "pnpm check",
-    "check:tool-names": "node scripts/check-tool-names.mjs"
+    "check:tool-names": "node scripts/check-tool-names.mjs",
+    "validate:dsh": "node scripts/validate-dsh.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.1.0",
@@ -133,7 +134,8 @@
     "registry": "https://registry.npmjs.org/"
   },
   "engines": {
-    "node": "^22.19.0 || >=24.0.0"
+    "node": "^22.19.0 || >=24.0.0",
+    "dsh": ">=0.2.2-rc.1 <0.2.3-0"
   },
   "packageManager": "pnpm@12.11.2"
 }

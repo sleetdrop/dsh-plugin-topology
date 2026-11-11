@@ -93,8 +93,17 @@ for a published artifact, so a tag cut too early cannot be quietly corrected —
 deleted.
 
 ```sh
+# 0. Read the official upgrade guide for the DSH release you are adapting to:
+#    https://github.com/deepseek-ai/deepseek-harness/tree/master/docs/upgrade-guide
+#    one directory per release (Change / Migration). Record what you actually
+#    checked in docs/DSH-UPGRADE.md; the harness then proves the runtime side.
+
 # 1. Bump package.json:
 #    - "version": the new plugin semver (independent of DSH).
+#    - engines.dsh: the line bound of the validated target, e.g.
+#      ">=0.2.2-rc.1 <0.2.3-0" (next line is patch + 1). check-compat derives
+#      the expected bound from the README row; peers stay on ^<target> as the
+#      compile target and are ignored for admission while engines.dsh exists.
 #    - peerDependencies / devDependencies: every @deepseek-ai/* client package
 #      pinned to the DSH rc you adapt to (cordis to ^4.0.x).
 
