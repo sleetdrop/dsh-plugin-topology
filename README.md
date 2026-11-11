@@ -135,7 +135,7 @@ version on their own schedule, independent of which DSH release it targets.
 The table below maps each plugin version to the DSH release it was validated
 against, so pick the plugin version whose target DSH matches your harness.
 
-Current release targets DeepSeek Harness `0.2.1-rc.2`; the `peerDependencies`
+Current release targets DeepSeek Harness `0.2.1-rc.5`; the `peerDependencies`
 pin the client packages and `@deepseek-ai/cordis@^4.0.4` the snapshot reads
 through. The 0.1.2 rc line removed the old `dsh-client-runtime` browser runtime:
 the client now runs on the Cordis `Context` augmented by the shell baseline
@@ -152,6 +152,20 @@ the individual `@deepseek-ai/dsh-*` packages leave it on an older prerelease
 rather than moving it with `next`. This plugin adapts to stable DSH `rc`
 releases only and skips the fast-moving `alpha` line.
 
+Each row states the exact DSH release the plugin version was validated
+against. A later rc of the same line (e.g. `0.2.1-rc.5` when the row says
+`0.2.1-rc.2`) still installs — peer ranges are line-shaped — but it is only
+"validated" when the row or the
+[upgrade audit](docs/DSH-UPGRADE.md) says so. Older lines keep a maintained
+version on their compat branch, validated by the sandbox harness
+(`node scripts/validate-dsh.mjs --dsh <rc> --plugin .`, see
+[docs/COMPAT-LINES.md](docs/COMPAT-LINES.md)). When in doubt, install the
+plugin version whose row matches your harness, and re-read the row after
+upgrading your harness: a new DSH line means a new plugin version. Maintained
+older lines also carry a `dsh-<line>` dist-tag (e.g. `dsh-0.2.1`), so `latest`
+stays on the newest line; installing the exact version from the row is always
+a safe choice.
+
 | Plugin version (Git + npm) | Targets DSH harness | Notes |
 | --- | --- | --- |
 | `0.1.0` | `0.1.1-rc.2` | Old `dsh-client-runtime` browser model (frozen). |
@@ -164,6 +178,8 @@ releases only and skips the fast-moving `alpha` line.
 | `0.7.0` | `0.2.1-rc.2` | Service inspector, missing services, startup timeline; live topology doctor (loaded-only). DSH peer refresh to 0.2.1-rc.2; quality gates unchanged. |
 | `0.8.0` | `0.2.1-rc.2` | Global topology page on the DSH layout/primitives; official controls/icons; semantic tokens; inspector/search/export refresh; static 2px startup timeline with row-driven hover pulses, selected blink and merged-group expansion. No DSH peer change. |
 | `0.9.0` | `0.2.1-rc.2` | Breaking: the model tool is renamed `graph_render` — the dotted `graph.render` was rejected by the provider (`INVALID_REQUEST`) and broke every session. Also stops the mass opacity transition that flashed the desktop window, and gives each node a subtle fill (`#f1f3f5`) so it reads as a pill instead of a bare outline. |
+| `0.9.1` | `0.2.2-rc.1` | DSH compat: the installed harness moved to rc `0.2.2`, whose `@deepseek-ai/cordis` is now `4.1.0`. Cordis `4.1.0` reworked its internals: `Fiber.store` (the inject snapshot) was renamed to `Fiber.committed`, and `Impl` dropped its `fiber` field (the provider fiber now lives at `Impl.ctx.fiber`). `snapshot()` was updated to both; the only other change is the peer/dev refresh onto the `0.2.2-rc.1` / `cordis@^4.1.0` line. |
+| `0.9.2` | `0.2.1-rc.5` | Line re-validation release (`compat/dsh-0.2.1.x`): the 0.2.1 line's later rcs (rc.3–rc.5) audited and validated end to end with the sandbox harness — only additive changes (sidebar panel pins + More menu, analytics schemas, primitives additions), no plugin code change. Peers refreshed to `^0.2.1-rc.5`. |
 
 ## Known Limitations
 
