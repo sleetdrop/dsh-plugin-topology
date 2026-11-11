@@ -153,6 +153,17 @@ the individual `@deepseek-ai/dsh-*` packages leave it on an older prerelease
 rather than moving it with `next`. This plugin adapts to stable DSH `rc`
 releases only and skips the fast-moving `alpha` line.
 
+Each row states the exact DSH release the plugin version was validated
+against. A later rc of the same line (e.g. `0.2.1-rc.5` when the row says
+`0.2.1-rc.2`) still installs — peer ranges are line-shaped — but it is only
+"validated" when the row or the
+[upgrade audit](docs/DSH-UPGRADE.md) says so. Older lines keep a maintained
+version on their compat branch, validated by the sandbox harness
+(`node scripts/validate-dsh.mjs --dsh <rc> --plugin .`, see
+[docs/COMPAT-LINES.md](docs/COMPAT-LINES.md)). When in doubt, install the
+plugin version whose row matches your harness, and re-read the row after
+upgrading your harness: a new DSH line means a new plugin version.
+
 | Plugin version (Git + npm) | Targets DSH harness | Notes |
 | --- | --- | --- |
 | `0.1.0` | `0.1.1-rc.2` | Old `dsh-client-runtime` browser model (frozen). |
