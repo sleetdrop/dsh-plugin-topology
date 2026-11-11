@@ -194,6 +194,20 @@ command, wrong profile, stale cache — is answered with the fix above and
 never with a version bump. Publishing first and diagnosing second is how a
 release ends up fixing nothing.
 
+## Follow-ups and rejected options
+
+- **Scheduled drift detection (deferred).** A weekly job that finds the newest
+  DSH `rc`, compares it with the declared target, and runs the harness only
+  when the target moved. It needs no long-running DSH deployment — the
+  harness assembles a disposable sandbox per run — but it is deferred until a
+  suitable runner/time exists; until then the manual `Validate DSH
+  compatibility` workflow is the gate.
+- **`diff-dsh`, a tarball `.d.ts`/manifest diff (not adopted).** Considered
+  for "what changed between two DSH releases". Not adopted: typed changes are
+  already caught by `pnpm typecheck` (the build compiles against those
+  declarations), runtime-only internals are invisible to a `.d.ts` diff and
+  are covered by the harness, so the tool adds little beyond noise.
+
 ## Release checklist deltas per location
 
 | Step | main (newest line) | compat/dsh-<line>.x |
