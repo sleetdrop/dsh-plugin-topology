@@ -81,8 +81,9 @@ line (see [docs/COMPAT-LINES.md](docs/COMPAT-LINES.md)):
   validated DSH release across all branches; version numbers are never
   reused.
 - A "no panel on DSH $V" user report is first reproduced with the harness at
-  the exact $V; green means the report is environmental (profile mismatch is
-  the first suspect), red means a compat patch.
+  the exact $V; green means the report is environmental (wrong launch command
+  or profile is the first suspect), red means a compat patch. An
+  environmental report never triggers a release.
 
 ## Quality gates
 

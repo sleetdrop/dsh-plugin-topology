@@ -155,16 +155,32 @@ A "no panel on DSH $V" report is handled in this order:
 1. Confirm the plugin version's peer range admits $V and the row's validated
    target matches or predates $V — if not, point the user at the right
    version first.
-2. Run the harness at $V against the reported plugin version; produce the
-   PASS/FAIL evidence.
-3. **Green**: the plugin is not the breakage. Ask for the served profile
-   identity (`dsh --dump-config` / which profile the opened UI belongs to —
-   typically the *profile mismatch* case: the plugin was installed into a
-   CLI-managed profile while the UI the user browses is served by another
-   profile), the boot log, and the console output (DevTools). The plugin's
-   own client logs its mount failures to the console, never silently.
+2. Reproduce with the harness at $V against the reported plugin version;
+   produce the PASS/FAIL evidence.
+3. **Green**: the plugin is not the breakage. Ask for the launch command,
+   the served profile identity (`dsh --profile <name> --dump-config`), the
+   boot log, and the console output (DevTools). Two report shapes have
+   already shown up and are worth checking first:
+   - **Wrong launch command.** `dsh --profile <name> web` passes a stray
+     `web` argument: on 0.2.1-rc.5 the app parser rejects it
+     (`too many arguments … got 1: web`) and starts nothing, so the UI the
+     user refreshes is served by another process or profile. `dsh web` is
+     shorthand for `--profile web`, a different profile. The correct restart
+     is `dsh --profile <name> --no-open --port 0`.
+   - **Silently skipped bundle.** An incompatible install is reported only
+     in the boot log (`dsh: skipping profile bundle … incompatible`) and
+     listed in `skippedBundles`; the browser shows nothing. Check the
+     profile's exact version, and prefer an exact pin over `^0.x` ranges.
 4. **Red**: fix on the right branch (compat branch if the line is older),
    release, update rows.
+
+**A user report is not a release trigger.** Publish only when the harness
+reproduces a failure at the user's exact version, or when the user needs a
+validated artifact that genuinely does not exist yet (a new rc of a
+maintained line with no row). An environmental report — wrong launch
+command, wrong profile, stale cache — is answered with the fix above and
+never with a version bump. Publishing first and diagnosing second is how a
+release ends up fixing nothing.
 
 ## Release checklist deltas per location
 
