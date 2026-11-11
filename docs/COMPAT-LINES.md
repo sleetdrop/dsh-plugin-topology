@@ -73,6 +73,26 @@ unpublished before tagging. `check-compat` keeps each branch's
 package.json / README / RELEASING.md / peers consistent *locally*, so a
 release always ships with a matching row.
 
+## Selecting a version for a line
+
+The version counter is a monotonic plugin history; it does not encode the DSH
+target. Selection is by **dist-tag** and by the matrix:
+
+- `latest` — the newest DSH line's current release, and what a bare
+  `dsh plugin add @sleetdrop/dsh-plugin-topology` installs. It moves only
+  with the newest line's releases.
+- `dsh-<line>` (e.g. `dsh-0.2.1`) — the maintained release of one line,
+  moved by that line's compat releases
+  (`./scripts/publish.sh dsh-0.2.1`, which publishes without touching
+  `latest`).
+- `next` — test builds of the next patch; never `latest`.
+
+A compat release therefore never becomes the newest line's auto-install: a
+user on an older harness installs `@.../topology@dsh-0.2.1` (or the exact
+version from the matrix row). The harness's install-time compatibility check
+rejects a wrong-line version loudly, and the matrix row says which rc was
+validated.
+
 ## The matrix
 
 The README compatibility table **is** the matrix. Every row states the exact

@@ -161,7 +161,10 @@ version on their compat branch, validated by the sandbox harness
 (`node scripts/validate-dsh.mjs --dsh <rc> --plugin .`, see
 [docs/COMPAT-LINES.md](docs/COMPAT-LINES.md)). When in doubt, install the
 plugin version whose row matches your harness, and re-read the row after
-upgrading your harness: a new DSH line means a new plugin version.
+upgrading your harness: a new DSH line means a new plugin version. Maintained
+older lines also carry a `dsh-<line>` dist-tag (e.g. `dsh-0.2.1`), so `latest`
+stays on the newest line; installing the exact version from the row is always
+a safe choice.
 
 | Plugin version (Git + npm) | Targets DSH harness | Notes |
 | --- | --- | --- |
