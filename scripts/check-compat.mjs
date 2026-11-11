@@ -26,8 +26,12 @@ const prerelease = pkg.version.includes('-')
 // The current row is found BY VERSION, not by position: `main` lists the other
 // maintained lines' releases too, so the last row may belong to a compat
 // branch (e.g. 0.9.2 -> 0.2.1-rc.5 below 0.9.1 -> 0.2.2-rc.1).
+// A test build has no row of its own; it agrees with the released row that
+// targets the same DSH release as the "Current release targets" sentence, not
+// with whatever row happens to be last (main also lists older lines).
 const currentRow = prerelease
-  ? readmeRows.find(row => row.version === pkg.version) ?? readmeRows.at(-1)
+  ? readmeRows.find(row => row.version === pkg.version)
+    ?? readmeRows.findLast(row => row.dsh === current[1])
   : readmeRows.find(row => row.version === pkg.version)
 
 if (currentRow === undefined) {
@@ -56,16 +60,20 @@ if (releaseRow !== undefined && releaseRow.dsh !== currentRow.dsh) {
 // version (0.2.2 satisfies ^0.2.1-rc.5), which is a different line.
 const engines = pkg.engines ?? {}
 const dshEngine = engines.dsh
-if (dshEngine !== undefined) {
-  const expected = lineBound(currentRow.dsh)
-  if (expected === null) {
-    console.error(`check-compat: cannot parse the DSH target ${currentRow.dsh}`)
-    process.exit(1)
-  }
-  if (dshEngine !== expected) {
-    console.error(`check-compat: engines.dsh is ${dshEngine}, expected ${expected} for target ${currentRow.dsh}`)
-    process.exit(1)
-  }
+// Every release declares its line; without the field the caret peers are all
+// that is left, and they admit the next line's stable release.
+if (dshEngine === undefined) {
+  console.error('check-compat: package.json is missing engines.dsh (every release declares its line)')
+  process.exit(1)
+}
+const expectedEngine = lineBound(currentRow.dsh)
+if (expectedEngine === null) {
+  console.error(`check-compat: cannot parse the DSH target ${currentRow.dsh}`)
+  process.exit(1)
+}
+if (dshEngine !== expectedEngine) {
+  console.error(`check-compat: engines.dsh is ${dshEngine}, expected ${expectedEngine} for target ${currentRow.dsh}`)
+  process.exit(1)
 }
 
 /**
@@ -95,7 +103,7 @@ for (const [name, range] of dshPeers) {
   }
 }
 
-const engineNote = dshEngine === undefined ? '' : `, engines.dsh ${dshEngine}`
+const engineNote = `, engines.dsh ${dshEngine}`
 console.log(prerelease
   ? `check-compat: ${pkg.version} is a prerelease of the ${pkg.version.split("-")[0]} line -> DSH ${currentRow.dsh}; ${dshPeers.length} peers agree${engineNote}`
   : `check-compat: ${pkg.version} -> DSH ${currentRow.dsh}; README, RELEASING.md and ${dshPeers.length} peers agree${engineNote}`)
