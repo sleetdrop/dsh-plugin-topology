@@ -1,0 +1,37 @@
+name: Validate DSH compatibility
+
+# Manual, pre-release evidence run: assemble the named DSH release from npm,
+# boot it headless, and probe the built plugin end to end. It never tags or
+# publishes. Policy (docs/COMPAT-LINES.md): a release waits for a green run on
+# its target, so a red run blocks the release even though it is not a required
+# PR check.
+on:
+  workflow_dispatch:
+    inputs:
+      dsh_version:
+        description: 'DSH release to validate against (e.g. 0.2.2-rc.1)'
+        required: true
+        type: string
+      plugin_spec:
+        description: 'Plugin spec or directory path (default: this checkout)'
+        required: false
+        default: .
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: node scripts/validate-dsh.mjs --dsh "${{ inputs.dsh_version }}" --plugin "${{ inputs.plugin_spec }}"

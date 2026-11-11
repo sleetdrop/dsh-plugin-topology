@@ -167,6 +167,13 @@ older lines also carry a `dsh-<line>` dist-tag (e.g. `dsh-0.2.1`), so `latest`
 stays on the newest line; installing the exact version from the row is always
 a safe choice.
 
+Releases declare their line in `engines.dsh` (for example
+`>=0.2.2-rc.1 <0.2.3-0`). The harness evaluates that one range on its own, so a
+caret range cannot accidentally admit the next line's stable release;
+`peerDependencies` document the packages the build compiles against. The table
+lists every maintained line's releases; the row for the current `package.json`
+version is the current release, and rows below it came from a compat branch.
+
 | Plugin version (Git + npm) | Targets DSH harness | Notes |
 | --- | --- | --- |
 | `0.1.0` | `0.1.1-rc.2` | Old `dsh-client-runtime` browser model (frozen). |
@@ -180,6 +187,7 @@ a safe choice.
 | `0.8.0` | `0.2.1-rc.2` | Global topology page on the DSH layout/primitives; official controls/icons; semantic tokens; inspector/search/export refresh; static 2px startup timeline with row-driven hover pulses, selected blink and merged-group expansion. No DSH peer change. |
 | `0.9.0` | `0.2.1-rc.2` | Breaking: the model tool is renamed `graph_render` — the dotted `graph.render` was rejected by the provider (`INVALID_REQUEST`) and broke every session. Also stops the mass opacity transition that flashed the desktop window, and gives each node a subtle fill (`#f1f3f5`) so it reads as a pill instead of a bare outline. |
 | `0.9.1` | `0.2.2-rc.1` | DSH compat: the installed harness moved to rc `0.2.2`, whose `@deepseek-ai/cordis` is now `4.1.0`. Cordis `4.1.0` reworked its internals: `Fiber.store` (the inject snapshot) was renamed to `Fiber.committed`, and `Impl` dropped its `fiber` field (the provider fiber now lives at `Impl.ctx.fiber`). `snapshot()` was updated to both; the only other change is the peer/dev refresh onto the `0.2.2-rc.1` / `cordis@^4.1.0` line. |
+| `0.9.2` | `0.2.1-rc.5` | Compat line re-validation (`compat/dsh-0.2.1.x`): the 0.2.1 line's later rcs audited (additive client changes only) and validated end to end with `scripts/validate-dsh.mjs`; no code change, peers refreshed to `^0.2.1-rc.5`, published under the `dsh-0.2.1` tag so `latest` stays on the newest line. |
 
 ## Known Limitations
 

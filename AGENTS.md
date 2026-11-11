@@ -73,7 +73,8 @@ Users stay on older DSH lines, so older lines stay maintained on
 line (see [docs/COMPAT-LINES.md](docs/COMPAT-LINES.md)):
 
 - Compat branches take **patch-only** releases; features land on `main` for
-  the newest line.
+  the newest line. Releases declare their line in `engines.dsh` (a
+  `>=<target> <next-patch>-0` bound); `check-compat` enforces it.
 - Every compat release is validated with
   `node scripts/validate-dsh.mjs --dsh <line rc> --plugin .` before tagging —
   same hard rule, same evidence requirements as main.

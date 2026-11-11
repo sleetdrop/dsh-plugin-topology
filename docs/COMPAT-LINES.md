@@ -9,10 +9,15 @@ answering a "plugin does not show up on DSH X.Y.Z" report.
 One plugin build can target **exactly one DSH line**. Two things couple the
 plugin to a line:
 
-- `peerDependencies` on `@deepseek-ai/dsh-*` — the harness's
-  `evaluatePluginCompatibility` accepts or rejects a plugin version against
-  the running DSH version by evaluating these ranges, so a plugin version is
-  *installable* on exactly the lines its peers admit.
+- `engines.dsh` — the official admission range. When present, the harness
+  evaluates it **alone** and ignores `peerDependencies`; otherwise every
+  `@deepseek-ai/dsh` / `@deepseek-ai/dsh-*` peer must match. The range must be
+  the line bound (`>=0.2.2-rc.1 <0.2.3-0`): DSH gives every rc line its own
+  patch release (0.2.1-rc.5 -> 0.2.2-rc.1), so the next line is patch + 1, and
+  a caret range would admit the next line's *stable* release.
+- `peerDependencies` on `@deepseek-ai/dsh-*` — what the build compiles
+  against; they document the target but no longer decide admission once
+  `engines.dsh` is present.
 - Code surfaces that drift between lines — Cordis internals read by
   `snapshot()` (`Fiber.store` vs `Fiber.committed`), slot contracts,
   typert codecs, sidebar/layout APIs.
@@ -78,6 +83,9 @@ release always ships with a matching row.
 The version counter is a monotonic plugin history; it does not encode the DSH
 target. Selection is by **dist-tag** and by the matrix:
 
+Every release declares its line in `engines.dsh`; `check-compat` derives the
+expected bound from the README row and fails when they disagree.
+
 - `latest` — the newest DSH line's current release, and what a bare
   `dsh plugin add @sleetdrop/dsh-plugin-topology` installs. It moves only
   with the newest line's releases.
@@ -96,7 +104,11 @@ validated.
 ## The matrix
 
 The README compatibility table **is** the matrix. Every row states the exact
-validated DSH release:
+validated DSH release. The current row is found **by version, not by
+position**, so `main` can list the other maintained lines' releases too
+(e.g. `0.9.2` from the compat branch below `0.9.1`); `check-compat` looks up
+the row for `package.json`'s version and verifies the sentence, the
+`docs/RELEASING.md` row, the peers and the `engines.dsh` bound against it:
 
 | Plugin version | Targets DSH harness | Notes |
 | --- | --- | --- |
@@ -187,7 +199,8 @@ release ends up fixing nothing.
 | Step | main (newest line) | compat/dsh-<line>.x |
 | --- | --- | --- |
 | Version bump | minor/patch per policy | patch only |
-| Peers | next line's rc | the line's newest validated rc |
+| Line declaration | `engines.dsh` line bound | `engines.dsh` line bound |
+| Peers | next line's rc (compile target) | the line's newest validated rc |
 | Harness validation | required | required |
 | PR + gates + squash | required | required |
 | Tag + publish | per RELEASING.md | per RELEASING.md, announce row in README matrix |
