@@ -13,15 +13,21 @@
  *      the cache), assert the sidebar renders the `Plugin topology` row,
  *      clicking it renders the topology page, and the console stays clean.
  *
+ * Stage 2 is REQUIRED unless `--no-browser` is passed: an unavailable
+ * browser (no chrome, no puppeteer-core, unsupported platform) fails the run
+ * with exit code 2 instead of reporting a green validation that never
+ * rendered the page.
+ *
  * Usage:
  *   node scripts/validate-dsh.mjs --dsh 0.2.1-rc.5 --plugin <dir|spec> [options]
  *
  * Options:
- *   --dsh <version>      DSH release to assemble, e.g. 0.2.1-rc.5 (default:
- *                        read from the compat row in docs/COMPAT-LINES.md is
- *                        not automatic — pass it explicitly).
+ *   --dsh <version>      DSH release to assemble, e.g. 0.2.1-rc.5 (pass it
+ *                        explicitly; nothing is inferred from the repo).
  *   --plugin <spec>      npm spec (name@version) or a directory path (added
- *                        as a file: link, so a local build is validated).
+ *                        as a file: dependency, which pnpm copies at install
+ *                        time — rebuild before the run, or pass a packed
+ *                        .tgz to validate the exact shipping payload).
  *   --profile <name>     profile name to create in the sandbox home
  *                        (default: default).
  *   --registry <url>     registry for the sandbox installs (default: the
@@ -31,15 +37,17 @@
  *                        downloaded once into the cache dir).
  *   --cache <dir>        cache for pnpm store, chrome shell, sandboxes
  *                        (default: ${XDG_CACHE_HOME:-~/.cache}/dsh-validate).
- *   --no-browser         run stage 1 only.
+ *   --no-browser         run stage 1 only (boot graph + bundle route).
  *   --keep               keep the sandbox home and project for inspection
- *                        (paths are printed) instead of deleting them.
+ *                        (paths are printed) instead of deleting them; the
+ *                        server and browser are still terminated.
  *
  * Environment: pnpm must be on PATH; node >= 22. Puppeteer-core is a
  * devDependency of this repository (the chrome shell itself is fetched
  * separately — puppeteer-core never downloads a browser).
  *
- * Exit code 0 = both stages green; 1 = validation failed; 2 = could not run.
+ * Exit code 0 = green; 1 = validation failed; 2 = could not run as requested
+ * (missing prerequisites, unsupported platform, install/boot failure).
  */
 
 import { createRequire } from 'node:module'
@@ -71,6 +79,34 @@ if (DSH === null || PLUGIN === null) {
   process.exit(2)
 }
 
+// ---- failure-safe resource cleanup -----------------------------------------
+
+const sandbox = mkdtempSync(join(tmpdir(), 'dsh-validate-'))
+let server = null      // detached DSH web server child
+let browser = null     // puppeteer browser
+let cleaned = false
+
+/** Terminate the server/browser and drop the sandbox; safe to call twice. */
+function cleanup() {
+  if (cleaned) return
+  cleaned = true
+  if (browser !== null) { try { browser.close() } catch { /* already gone */ } }
+  if (server !== null) {
+    try { server.kill() } catch { /* already gone */ }
+    try { process.kill(-server.pid, 'SIGTERM') } catch { /* process group gone */ }
+  }
+  if (!KEEP) rmSync(sandbox, { recursive: true, force: true })
+}
+
+function die(msg, code = 1) {
+  console.error('[validate-dsh] ' + msg)
+  cleanup()
+  process.exit(code)
+}
+
+process.on('uncaughtException', error => die(`unexpected error: ${error?.stack ?? error}`, 2))
+process.on('unhandledRejection', error => die(`unexpected rejection: ${error?.stack ?? error}`, 2))
+
 // ---- small helpers ---------------------------------------------------------
 
 function run(cmd, cwd, env, opts = {}) {
@@ -79,7 +115,6 @@ function run(cmd, cwd, env, opts = {}) {
   return r
 }
 function say(msg) { console.log('[validate-dsh] ' + msg) }
-function die(msg, code = 1) { console.error('[validate-dsh] ' + msg); process.exit(code) }
 
 // The native deps DSH's tree compiles; pnpm >= 12 gates them behind allowBuilds.
 // NOTE: do not set autoInstallPeers here — dsh packages resolve their peers at
@@ -92,7 +127,6 @@ const ALLOW_BUILDS = [
 const ALLOW_BUILDS_YAML = `\nallowBuilds:\n${ALLOW_BUILDS.map(p => `  ${JSON.stringify(p)}: true`).join('\n')}\n`
 const PROJECT_WORKSPACE_YAML = `allowBuilds:\n${ALLOW_BUILDS.map(p => `  ${JSON.stringify(p)}: true`).join('\n')}\n`
 
-const sandbox = mkdtempSync(join(tmpdir(), 'dsh-validate-'))
 const storeHome = join(CACHE, 'home')          // pnpm store + package-manager store
 const chromeDir = join(CACHE, 'chrome')
 mkdirSync(storeHome, { recursive: true })
@@ -108,16 +142,22 @@ const baseEnv = {
 
 // ---- 0. chrome shell -------------------------------------------------------
 
+/** The chrome-for-testing platform slug for this host, or null. */
+function chromePlatform() {
+  if (process.platform === 'darwin') return process.arch === 'arm64' ? 'mac-arm64' : 'mac-x64'
+  if (process.platform === 'linux') return 'linux64'
+  return null
+}
+
+/** Resolve (or download once into the cache) the chrome-headless-shell, or null. */
 async function chromeShell() {
-  if (CHROME_ARG !== null) return CHROME_ARG
-  if (NO_BROWSER) return null
+  if (CHROME_ARG !== null) return existsSync(CHROME_ARG) ? CHROME_ARG : null
   const version = '131.0.6778.204'
+  const platform = chromePlatform()
+  if (platform === null) return null
   const dir = join(chromeDir, version)
-  const exe = join(dir, 'chrome-headless-shell-mac-arm64', 'chrome-headless-shell')
+  const exe = join(dir, `chrome-headless-shell-${platform}`, 'chrome-headless-shell')
   if (existsSync(exe)) return exe
-  // arm64/x64 both end with mac-arm64 / mac-x64 below; keep this script mac/linux simple:
-  const platform = process.platform === 'darwin' ? 'mac-arm64' : process.platform === 'linux' ? 'linux64' : null
-  if (platform === null) { say('unsupported platform for automatic chrome download; pass --chrome'); return null }
   const base = `chrome-for-testing/${version}/${platform}/chrome-headless-shell-${platform}.zip`
   const mirrors = ['https://registry.npmmirror.com/-/binary/', 'https://storage.googleapis.com/']
   say(`downloading chrome-headless-shell ${version}…`)
@@ -130,7 +170,6 @@ async function chromeShell() {
     const u = run('unzip', chromeDir, { ...process.env }, { args: ['-q', '-o', zip, '-d', dir] })
     if (u.status === 0 && existsSync(exe)) return exe
   }
-  say('chrome download failed; running stage 1 only')
   return null
 }
 
@@ -145,7 +184,7 @@ writeFileSync(join(project, 'package.json'),
 async function pnpm(args, cwd, env, opts = {}) {
   const registryArgs = REGISTRY !== null ? ['--registry=' + REGISTRY] : []
   const r = run('pnpm', cwd, env, { args: [...args, ...registryArgs], timeout: 1200_000, ...opts })
-  if (r.status !== 0) die(`pnpm ${args[0]} failed (see output above): ${(r.stderr || '').slice(-800)}`)
+  if (r.status !== 0) die(`pnpm ${args[0]} failed (see output above): ${(r.stderr || '').slice(-800)}`, 2)
 }
 
 say(`installing @deepseek-ai/dsh@${DSH} into the sandbox (first run downloads; later runs reuse the cache)`)
@@ -154,7 +193,7 @@ const bin = join(project, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js'
 
 function dsh(args, timeoutMs = 1200_000) {
   const r = run('node', project, baseEnv, { args: [bin, ...args], timeout: timeoutMs })
-  if (r.status !== 0) die(`dsh ${args.join(' ')} failed: ${(r.stderr || r.stdout || '').slice(-800)}`)
+  if (r.status !== 0) die(`dsh ${args.join(' ')} failed: ${(r.stderr || r.stdout || '').slice(-800)}`, 2)
   return r.stdout
 }
 
@@ -182,12 +221,12 @@ require('node:fs').writeFileSync(profilePkgPath, JSON.stringify(profilePkg, null
 // ---- 2. boot headless web --------------------------------------------------
 
 say('booting the headless web server')
-const child = spawn('node', [bin, '--profile', PROFILE, '--no-open', '--port', '0'], {
+server = spawn('node', [bin, '--profile', PROFILE, '--no-open', '--port', '0'], {
   cwd: project, env: baseEnv, stdio: ['ignore', 'pipe', 'pipe'], detached: true,
 })
 let output = ''
-child.stdout.on('data', c => { output += c })
-child.stderr.on('data', c => { output += c })
+server.stdout.on('data', c => { output += c })
+server.stderr.on('data', c => { output += c })
 
 const urlMatch = await new Promise(resolveMatch => {
   const timer = setTimeout(() => resolveMatch(null), 180_000)
@@ -227,68 +266,61 @@ say('  - plugin bundle route 200')
 
 // ---- 4. stage 2: browser probe ----------------------------------------------
 
-let browserStage = 'skipped'
+let browserStage = 'stage 1 only'
 if (!NO_BROWSER) {
-  try { require.resolve('puppeteer-core') } catch { await import('puppeteer-core').catch(() => null) }
-  const chrome = await chromeShell()
-  if (chrome !== null) {
-    let puppeteer = null
-    try { puppeteer = (await import('puppeteer-core')).default } catch { /* devDependency missing */ }
-    if (puppeteer === null) {
-      say('stage 2: puppeteer-core is not installed — run `pnpm install` in the repo first')
-    } else {
-      say('stage 2: browser probe')
-      const browser = await puppeteer.launch({
-        executablePath: chrome, headless: true,
-        args: ['--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
-      })
-      const page = await browser.newPage()
-      await page.setViewport({ width: 1440, height: 900 })
-      const consoleFailures = []
-      page.on('console', msg => { if (msg.type() === 'error') consoleFailures.push(msg.text().slice(0, 300)) })
-      page.on('pageerror', err => consoleFailures.push(String(err).slice(0, 300)))
-      await page.goto(urlMatch, { waitUntil: 'networkidle2', timeout: 60_000 })
-      await new Promise(r => setTimeout(r, 20_000))
-      const rowSeen = await page.evaluate(() => {
-        const rows = [...document.querySelectorAll('*')]
-        return rows.some(el => /Plugin topology|插件拓扑/.test(el.textContent || '') && el.children.length <= 1)
-      })
-      if (!rowSeen) die('sidebar row "Plugin topology" not rendered')
-      const clicked = await page.evaluate(() => {
-        const target = [...document.querySelectorAll('button, [role="button"], [class*="panelRow"]')]
-          .find(el => /Plugin topology|插件拓扑/.test(el.textContent || ''))
-        if (!target) return false
-        target.click()
-        return true
-      })
-      await new Promise(r => setTimeout(r, 20_000))
-      const rendered = await page.evaluate(() => {
-        const text = document.body ? document.body.innerText : ''
-        return {
-          metrics: /Plugins\s+\d+/.test(text) && /Dependencies\s+\d+/.test(text),
-          svgs: document.querySelectorAll('svg').length,
-        }
-      })
-      if (!clicked) die('sidebar row existed but could not be clicked')
-      if (!rendered.metrics || rendered.svgs < 1) {
-        die(`topology page did not render (metrics=${rendered.metrics}, svgs=${rendered.svgs})`)
-      }
-      if (consoleFailures.length > 0) die(`console errors while loading the plugin page:\n${consoleFailures.join('\n')}`)
-      say(`  - sidebar row rendered, page rendered (${rendered.svgs} svgs), console clean`)
-      browserStage = 'passed'
-      await browser.close()
-    }
+  let puppeteer = null
+  try { puppeteer = (await import('puppeteer-core')).default } catch { /* devDependency missing */ }
+  if (puppeteer === null) {
+    die('stage 2 requires puppeteer-core — run `pnpm install` in this repo, or pass --no-browser for stage 1 only', 2)
   }
+  const chrome = await chromeShell()
+  if (chrome === null) {
+    die('stage 2 requires a chrome-headless-shell — install one and pass --chrome <path>, or pass --no-browser for stage 1 only', 2)
+  }
+  say('stage 2: browser probe')
+  browser = await puppeteer.launch({
+    executablePath: chrome, headless: true,
+    args: ['--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
+  })
+  const page = await browser.newPage()
+  await page.setViewport({ width: 1440, height: 900 })
+  const consoleFailures = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleFailures.push(msg.text().slice(0, 300)) })
+  page.on('pageerror', err => consoleFailures.push(String(err).slice(0, 300)))
+  await page.goto(urlMatch, { waitUntil: 'networkidle2', timeout: 60_000 })
+  await new Promise(r => setTimeout(r, 20_000))
+  const rowSeen = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('*')]
+    return rows.some(el => /Plugin topology|插件拓扑/.test(el.textContent || '') && el.children.length <= 1)
+  })
+  if (!rowSeen) die('sidebar row "Plugin topology" not rendered')
+  const clicked = await page.evaluate(() => {
+    const target = [...document.querySelectorAll('button, [role="button"], [class*="panelRow"]')]
+      .find(el => /Plugin topology|插件拓扑/.test(el.textContent || ''))
+    if (!target) return false
+    target.click()
+    return true
+  })
+  await new Promise(r => setTimeout(r, 20_000))
+  const rendered = await page.evaluate(() => {
+    const text = document.body ? document.body.innerText : ''
+    return {
+      metrics: /Plugins\s+\d+/.test(text) && /Dependencies\s+\d+/.test(text),
+      svgs: document.querySelectorAll('svg').length,
+    }
+  })
+  if (!clicked) die('sidebar row existed but could not be clicked')
+  if (!rendered.metrics || rendered.svgs < 1) {
+    die(`topology page did not render (metrics=${rendered.metrics}, svgs=${rendered.svgs})`)
+  }
+  if (consoleFailures.length > 0) die(`console errors while loading the plugin page:\n${consoleFailures.join('\n')}`)
+  say(`  - sidebar row rendered, page rendered (${rendered.svgs} svgs), console clean`)
+  browserStage = 'browser probe'
 }
 
 // ---- 5. report ---------------------------------------------------------------
 
-child.kill()
-try { process.kill(-child.pid, 'SIGTERM') } catch { /* already gone */ }
-say(`validation PASSED for ${PLUGIN} on DSH ${DSH} (boot graph + bundle + ${browserStage === 'passed' ? 'browser probe' : 'browser stage skipped'})`)
-if (KEEP) {
-  say(`sandbox kept at ${sandbox} (DSH_HOME: ${baseEnv.DSH_HOME})`)
-} else {
-  rmSync(sandbox, { recursive: true, force: true })
-}
+say(`validation PASSED for ${pluginSpec} on DSH ${DSH} (boot graph + bundle + ${browserStage})`)
+if (KEEP) say(`sandbox kept at ${sandbox} (DSH_HOME: ${baseEnv.DSH_HOME})`)
+cleanup()
 process.exit(0)
