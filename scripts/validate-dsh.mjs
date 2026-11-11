@@ -306,11 +306,16 @@ if (!NO_BROWSER) {
   page.on('console', msg => { if (msg.type() === 'error') consoleFailures.push(msg.text().slice(0, 300)) })
   page.on('pageerror', err => consoleFailures.push(String(err).slice(0, 300)))
   await page.goto(urlMatch, { waitUntil: 'networkidle2', timeout: 60_000 })
-  await new Promise(r => setTimeout(r, 20_000))
-  const rowSeen = await page.evaluate(() => {
+  // Poll for the row/page to arrive instead of sleeping a fixed 20s: the
+  // client bundle finishes when it finishes, which is seconds on a fast host
+  // and longer under CI load. A timeout is not fatal here — the evaluate
+  // below re-reads the DOM and reports the actual state.
+  const rowVisible = () => {
     const rows = [...document.querySelectorAll('*')]
     return rows.some(el => /Plugin topology|插件拓扑/.test(el.textContent || '') && el.children.length <= 1)
-  })
+  }
+  await page.waitForFunction(rowVisible, { timeout: 60_000, polling: 250 }).catch(() => {})
+  const rowSeen = await page.evaluate(rowVisible)
   if (!rowSeen) die('sidebar row "Plugin topology" not rendered')
   const clicked = await page.evaluate(() => {
     const target = [...document.querySelectorAll('button, [role="button"], [class*="panelRow"]')]
@@ -319,7 +324,12 @@ if (!NO_BROWSER) {
     target.click()
     return true
   })
-  await new Promise(r => setTimeout(r, 20_000))
+  if (!clicked) die('sidebar row existed but could not be clicked')
+  const pageRendered = () => {
+    const text = document.body ? document.body.innerText : ''
+    return /Plugins\s+\d+/.test(text) && document.querySelectorAll('svg').length > 0
+  }
+  await page.waitForFunction(pageRendered, { timeout: 60_000, polling: 250 }).catch(() => {})
   const rendered = await page.evaluate(() => {
     const text = document.body ? document.body.innerText : ''
     return {
@@ -327,7 +337,6 @@ if (!NO_BROWSER) {
       svgs: document.querySelectorAll('svg').length,
     }
   })
-  if (!clicked) die('sidebar row existed but could not be clicked')
   if (!rendered.metrics || rendered.svgs < 1) {
     die(`topology page did not render (metrics=${rendered.metrics}, svgs=${rendered.svgs})`)
   }

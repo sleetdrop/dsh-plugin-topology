@@ -154,6 +154,12 @@ once into a cache directory (npmmirror mirror, Google fallback). See the
 script header for exact usage. Every maintained line's current target should
 pass the harness before any release is tagged.
 
+Every pull request also runs both stages automatically against the line its
+checkout declares in `engines.dsh` (`.github/workflows/pr-validate.yml`), so a
+peer-range or client-bundle mistake cannot merge green and surface later as a
+missing panel. The manual workflow (`validate-dsh.yml`) stays the evidence run
+for arbitrary releases and the release gate; docs-only PRs skip the probe.
+
 `--plugin <dir>` installs a `file:` dependency, which pnpm copies at install
 time rather than symlinking: rebuild the checkout, then re-run the harness
 (each run gets a fresh sandbox, so this is automatic). To validate the exact

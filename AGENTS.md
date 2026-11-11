@@ -96,6 +96,12 @@ provider-safe tool names. CI
 authoritative gate; local green is necessary, not sufficient. Do not weaken a
 check to make a change pass — fix the drift or update the documented baseline.
 
+`pr-validate.yml` adds the integration layer: it boots the DSH release named by
+`engines.dsh` in a disposable sandbox and drives the built plugin in headless
+Chrome (sidebar row, page render, clean console). CI compiles the code and runs
+its units; this job is what proves the plugin is actually *visible* after
+install. Docs-only PRs skip the heavy steps but still report the context green.
+
 The phased quality/drift workstream, its sources and the definition of done
 live in [`docs/QUALITY.md`](docs/QUALITY.md). Add new industry practices there
 instead of leaving them only in a chat.
