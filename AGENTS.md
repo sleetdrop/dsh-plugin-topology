@@ -48,6 +48,16 @@ merged through a PR are deleted automatically. Do not try
 - Open a PR (`gh pr create`) using the repository template, with commands and
   real output under Evidence. Wait for both checks — never merge red, never
   bypass protection.
+- **Check the Codex review before merging.** The repo has a Codex review bot
+  (`chatgpt-codex-connector`). After opening the PR — and again after any push
+  that changes the diff — wait about five minutes, then read its summary:
+  ```sh
+  gh pr view <n> --json comments --jq '.comments[].body' | grep -E 'codex-review-state|<relative-time'
+  ```
+  The `commit_sha` inside the `codex-review-state` marker must be the PR head
+  (`gh pr view <n> --json headRefOid`). A clean review of an older commit is
+  not a review of what merges: a push re-triggers the bot, so wait for the new
+  head to be reviewed. Fix or answer findings; never merge past them silently.
 - Keep the branch current by rebasing: `git fetch origin && git rebase
   origin/main`. Required checks are strict, so a stale branch cannot merge.
   `git push --force-with-lease` is allowed only on your own feature branch,
