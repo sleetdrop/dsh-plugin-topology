@@ -86,6 +86,21 @@ let server = null      // detached DSH web server child
 let browser = null     // puppeteer browser
 let cleaned = false
 
+/** Synchronous sleep: cleanup runs from die() and process handlers, where timers never fire. */
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+}
+
+/** Drop the sandbox, retrying while the just-killed server tree is still flushing files. */
+function removeSandbox() {
+  for (let attempt = 0; ; attempt++) {
+    try { rmSync(sandbox, { recursive: true, force: true }); return } catch (error) {
+      if (attempt === 19) throw error
+      sleepSync(100)
+    }
+  }
+}
+
 /** Terminate the server/browser and drop the sandbox; safe to call twice. */
 function cleanup() {
   if (cleaned) return
@@ -94,8 +109,11 @@ function cleanup() {
   if (server !== null) {
     try { server.kill() } catch { /* already gone */ }
     try { process.kill(-server.pid, 'SIGTERM') } catch { /* process group gone */ }
+    // rmSync raced the still-exiting server and threw ENOTEMPTY; wait for the
+    // child to report exit (2s cap) before deleting its DSH_HOME.
+    for (let i = 0; i < 40 && server.exitCode === null && server.signalCode === null; i++) sleepSync(50)
   }
-  if (!KEEP) rmSync(sandbox, { recursive: true, force: true })
+  if (!KEEP) removeSandbox()
 }
 
 function die(msg, code = 1) {
