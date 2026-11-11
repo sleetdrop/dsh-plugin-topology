@@ -37,8 +37,9 @@ between plugin version and validated DSH release is the compatibility table in
 
 GitHub branch protection is on for `main` and applies to admins: direct pushes
 are rejected, force-push and deletion are blocked, every conversation must be
-resolved, and a PR can merge only when `quality (node 22)` and
-`quality (node 24)` are green on a branch up to date with `main`. Branches
+resolved, and a PR can merge only when `quality (node 22)`, `quality (node 24)`
+and `validate (real DSH + browser)` are green on a branch up to date with
+`main`. Branches
 merged through a PR are deleted automatically. Do not try
 `git push origin main`; expect it to fail.
 
