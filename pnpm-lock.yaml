@@ -167,8 +167,8 @@ importers:
   .:
     dependencies:
       '@hpcc-js/wasm-graphviz':
-        specifier: ^1.29.2
-        version: 1.29.2
+        specifier: ^1.30.0
+        version: 1.30.0
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -432,8 +432,8 @@ packages:
   '@emnapi/wasi-threads@2.2.0':
     resolution: {integrity: sha512-JP7OYH38Q7+pyTAe14raZHLQIK7BDKbdwji+Xi3pcd/6QkJYQH3SX4wu6EplGrGJWRepoNzedfm0G3B9Z4e9Rw==}
 
-  '@hpcc-js/wasm-graphviz@1.29.2':
-    resolution: {integrity: sha512-AkArBAZERT5OxH52/+kvCHB07cZ6ZNd9GnOvjw+S880bR88D6i27XfK6xj4dBhUDxNA2QPPMdgEcky3x4TJ3KA==}
+  '@hpcc-js/wasm-graphviz@1.30.0':
+    resolution: {integrity: sha512-T20IKosOZuex2qV049fQokVJy2MWv8w9Md5V/4mRKCXDf49fBCR50VD1yBlPYHaQlHPsFGRdqXN//r59vZliWQ==}
 
   '@napi-rs/wasm-runtime@1.2.6':
     resolution: {integrity: sha512-mRyDmEw9/fCDXCGfL1sbgIw/GUK0PVxRW4YwgPN61F3LQ+fSyoBFarJVzgGyhF6kRzEQZ0FejDqm4WLXSeqQmw==}
@@ -1503,7 +1503,7 @@ snapshots:
       tslib: 2.9.1
     optional: true
 
-  '@hpcc-js/wasm-graphviz@1.29.2': {}
+  '@hpcc-js/wasm-graphviz@1.30.0': {}
 
   '@napi-rs/wasm-runtime@1.2.6(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2)':
     dependencies:
