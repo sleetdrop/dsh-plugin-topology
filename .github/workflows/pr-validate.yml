@@ -86,6 +86,15 @@ jobs:
       - name: Validate on DSH ${{ steps.dsh.outputs.version }}
         if: steps.filter.outputs.nonDocs != 'false' || steps.filter.outputs.any_count == '0'
         run: node scripts/validate-dsh.mjs --dsh "${{ steps.dsh.outputs.version }}" --plugin .
+      # The harness screenshots the probe page before a stage-2 failure; the
+      # step log alone rarely explains a page that rendered blank.
+      - name: Upload the failure screenshot
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dsh-validate-failure
+          path: ~/.cache/dsh-validate/failure.png
+          if-no-files-found: ignore
       - name: Docs-only — browser validation skipped
         if: steps.filter.outputs.nonDocs == 'false' && steps.filter.outputs.any_count != '0'
         run: echo "documentation-only change; the DSH sandbox probe is not needed"

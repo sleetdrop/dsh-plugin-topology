@@ -84,6 +84,7 @@ if (DSH === null || PLUGIN === null) {
 const sandbox = mkdtempSync(join(tmpdir(), 'dsh-validate-'))
 let server = null      // detached DSH web server child
 let browser = null     // puppeteer browser
+let probePage = null   // the stage-2 page, kept for failure screenshots
 let cleaned = false
 
 /** Synchronous sleep: cleanup runs from die() and process handlers, where timers never fire. */
@@ -120,6 +121,14 @@ function die(msg, code = 1) {
   console.error('[validate-dsh] ' + msg)
   cleanup()
   process.exit(code)
+}
+
+/** Screenshot the probe page, then fail: a blank/partial page is hard to read from a stack trace. */
+async function probeFail(msg) {
+  if (probePage !== null) {
+    try { await probePage.screenshot({ path: join(CACHE, 'failure.png') }) } catch { /* page already gone */ }
+  }
+  die(msg)
 }
 
 process.on('uncaughtException', error => die(`unexpected error: ${error?.stack ?? error}`, 2))
@@ -301,6 +310,7 @@ if (!NO_BROWSER) {
     args: ['--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
   })
   const page = await browser.newPage()
+  probePage = page
   await page.setViewport({ width: 1440, height: 900 })
   const consoleFailures = []
   page.on('console', msg => { if (msg.type() === 'error') consoleFailures.push(msg.text().slice(0, 300)) })
@@ -316,7 +326,7 @@ if (!NO_BROWSER) {
   }
   await page.waitForFunction(rowVisible, { timeout: 60_000, polling: 250 }).catch(() => {})
   const rowSeen = await page.evaluate(rowVisible)
-  if (!rowSeen) die('sidebar row "Plugin topology" not rendered')
+  if (!rowSeen) await probeFail('sidebar row "Plugin topology" not rendered')
   const clicked = await page.evaluate(() => {
     const target = [...document.querySelectorAll('button, [role="button"], [class*="panelRow"]')]
       .find(el => /Plugin topology|插件拓扑/.test(el.textContent || ''))
@@ -324,7 +334,7 @@ if (!NO_BROWSER) {
     target.click()
     return true
   })
-  if (!clicked) die('sidebar row existed but could not be clicked')
+  if (!clicked) await probeFail('sidebar row existed but could not be clicked')
   const pageRendered = () => {
     const text = document.body ? document.body.innerText : ''
     return /Plugins\s+\d+/.test(text) && document.querySelectorAll('svg').length > 0
@@ -338,9 +348,9 @@ if (!NO_BROWSER) {
     }
   })
   if (!rendered.metrics || rendered.svgs < 1) {
-    die(`topology page did not render (metrics=${rendered.metrics}, svgs=${rendered.svgs})`)
+    await probeFail(`topology page did not render (metrics=${rendered.metrics}, svgs=${rendered.svgs})`)
   }
-  if (consoleFailures.length > 0) die(`console errors while loading the plugin page:\n${consoleFailures.join('\n')}`)
+  if (consoleFailures.length > 0) await probeFail(`console errors while loading the plugin page:\n${consoleFailures.join('\n')}`)
   say(`  - sidebar row rendered, page rendered (${rendered.svgs} svgs), console clean`)
   browserStage = 'browser probe'
 }
