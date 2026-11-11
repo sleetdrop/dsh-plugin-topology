@@ -66,6 +66,24 @@ merged through a PR are deleted automatically. Do not try
 - Tags are not branches: after the release PR merges, tag the squash-merged
   release commit and push the tag directly.
 
+## Compat branches
+
+Users stay on older DSH lines, so older lines stay maintained on
+`compat/dsh-<line>.x` branches cut from the last release that targeted the
+line (see [docs/COMPAT-LINES.md](docs/COMPAT-LINES.md)):
+
+- Compat branches take **patch-only** releases; features land on `main` for
+  the newest line.
+- Every compat release is validated with
+  `node scripts/validate-dsh.mjs --dsh <line rc> --plugin .` before tagging —
+  same hard rule, same evidence requirements as main.
+- The README compatibility matrix is the single mapping of plugin version →
+  validated DSH release across all branches; version numbers are never
+  reused.
+- A "no panel on DSH $V" user report is first reproduced with the harness at
+  the exact $V; green means the report is environmental (profile mismatch is
+  the first suspect), red means a compat patch.
+
 ## Quality gates
 
 `pnpm check` is the local equivalent of CI and must be green before reporting a

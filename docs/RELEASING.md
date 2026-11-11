@@ -53,6 +53,31 @@ branches are deleted automatically. The full rules agents must follow are in
 - tags are not branches: tag the squash-merged release commit after the PR
   lands.
 
+## Multi-line maintenance
+
+One plugin build targets exactly one DSH line (peer ranges + code surfaces).
+Users on an older line need a maintained version of their own. The full model
+— branch layout, version numbering, the release matrix, the validation
+harness, and how to answer "no panel on DSH $V" reports — lives in
+[`COMPAT-LINES.md`](COMPAT-LINES.md). The short version:
+
+- `main` tracks the newest DSH line. When a release targets a newer line than
+  the previous release, cut `compat/dsh-<previous-line>.x` from the last
+  release commit that targeted the previous line (v0.9.1 → `compat/dsh-0.2.1.x`
+  from v0.9.0).
+- Compat branches take **patch-only** releases (features land on `main`),
+  keep the line's peer pins, and are validated with
+  `node scripts/validate-dsh.mjs --dsh <line rc> --plugin .` before every
+  release — the same no-tag-without-verification rule as main.
+- The README compatibility matrix is the single mapping of plugin version →
+  validated DSH release, across every branch. Version numbers are one
+  strictly increasing counter; never reuse a published number.
+- A same-line rc drift (user on `0.2.1-rc.5`, validated row `0.2.1-rc.2`) is
+  resolved by reproducing with the harness, then either diagnosing the
+  environment (green) or releasing a compat patch (red). A validation-only
+  patch release (precedent: `0.3.1`) is legitimate when the user base sits on
+  the drifted rc.
+
 ## One release, end to end
 
 Pick a new plugin version using plain semver (e.g. `0.2.0`), and the DSH rc you
@@ -231,3 +256,5 @@ each was validated against (Git tags carry a `v` prefix, npm versions do not).
 | `0.7.0` | `0.2.1-rc.2` | Service inspector, missing services, startup timeline; live topology doctor (loaded-only); DSH 0.2.1-rc.2 peer refresh |
 | `0.8.0` | `0.2.1-rc.2` | Global main page on DSH layout/primitives; static 2px startup strip; row-driven hover pulse; merged groups; no DSH peer change |
 | `0.9.0` | `0.2.1-rc.2` | Breaking: tool renamed `graph_render` (dotted name rejected by the API, broke every session); mass opacity transition removed (desktop flash); theme detection reads `data-ds-dark-theme`; subtle node fill |
+| `0.9.1` | `0.2.2-rc.1` | DSH compat: cordis `4.1.0` renamed `Fiber.store` → `Fiber.committed` and moved the provider fiber from `Impl.fiber` to `Impl.ctx.fiber`; `snapshot()` adapted; peer/dev refresh onto the `0.2.2-rc.1` / `cordis@^4.1.0` line |
+| `0.9.2` | `0.2.1-rc.5` | Compat-branch release (`compat/dsh-0.2.1.x`): line re-validation for the 0.2.1 line's later rcs. Audited rc.2 → rc.5 (only additive client changes: sidebar panel pins + More menu, analytics schemas, primitives additions) and validated end to end with `scripts/validate-dsh.mjs` — no plugin code change; peers/dev refreshed to `^0.2.1-rc.5` |
