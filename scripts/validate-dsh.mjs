@@ -74,17 +74,23 @@ if (DSH === null || PLUGIN === null) {
 // ---- small helpers ---------------------------------------------------------
 
 function run(cmd, cwd, env, opts = {}) {
-  const r = spawnSync(cmd, { cwd, env, shell: false, encoding: 'utf8', ...opts })
+  const { args = [], ...rest } = opts
+  const r = spawnSync(cmd, args, { cwd, env, shell: false, encoding: 'utf8', ...rest })
   return r
 }
 function say(msg) { console.log('[validate-dsh] ' + msg) }
 function die(msg, code = 1) { console.error('[validate-dsh] ' + msg); process.exit(code) }
 
 // The native deps DSH's tree compiles; pnpm >= 12 gates them behind allowBuilds.
+// NOTE: do not set autoInstallPeers here — dsh packages resolve their peers at
+// install time (the CLI's own profile yaml disables auto-install, but the
+// sandbox umbrella project must keep pnpm's defaults, or peer-only packages
+// like cordis-plugin-group never get installed and the CLI fails to boot).
 const ALLOW_BUILDS = [
   '@deepseek-ai/dsh-subprocess-local', '@google/genai', 'koffi', 'node-pty', 'protobufjs',
 ]
-const WORKSPACE_YAML = `packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n\nallowBuilds:\n${ALLOW_BUILDS.map(p => `  ${JSON.stringify(p)}: true`).join('\n')}\n`
+const ALLOW_BUILDS_YAML = `\nallowBuilds:\n${ALLOW_BUILDS.map(p => `  ${JSON.stringify(p)}: true`).join('\n')}\n`
+const PROJECT_WORKSPACE_YAML = `allowBuilds:\n${ALLOW_BUILDS.map(p => `  ${JSON.stringify(p)}: true`).join('\n')}\n`
 
 const sandbox = mkdtempSync(join(tmpdir(), 'dsh-validate-'))
 const storeHome = join(CACHE, 'home')          // pnpm store + package-manager store
@@ -132,7 +138,7 @@ async function chromeShell() {
 
 const project = join(sandbox, 'project')
 mkdirSync(project, { recursive: true })
-writeFileSync(join(project, 'pnpm-workspace.yaml'), WORKSPACE_YAML)
+writeFileSync(join(project, 'pnpm-workspace.yaml'), PROJECT_WORKSPACE_YAML)
 writeFileSync(join(project, 'package.json'),
   JSON.stringify({ name: 'dsh-validate-sandbox', private: true, dependencies: { '@deepseek-ai/dsh': DSH } }, null, 2))
 
@@ -159,8 +165,10 @@ const pluginSpec = PLUGIN.startsWith('/') || PLUGIN.startsWith('.') || PLUGIN.st
 say(`creating profile ${PROFILE} and adding ${pluginSpec}`)
 dsh(['plugin', '--profile', PROFILE, 'add', pluginSpec])
 // The web UI needs the web-app bundle (the desktop app carries it too); the
-// profile's pnpm run needs the build approvals as well.
-writeFileSync(join(baseEnv.DSH_HOME, 'profiles', PROFILE, 'pnpm-workspace.yaml'), WORKSPACE_YAML)
+// profile's pnpm run needs the build approvals as well — append, never
+// overwrite: the CLI owns the rest of the profile yaml.
+const profileYamlPath = join(baseEnv.DSH_HOME, 'profiles', PROFILE, 'pnpm-workspace.yaml')
+writeFileSync(profileYamlPath, require('node:fs').readFileSync(profileYamlPath, 'utf8') + ALLOW_BUILDS_YAML)
 dsh(['plugin', '--profile', PROFILE, 'add', `@deepseek-ai/dsh-web-app@${DSH}`])
 
 // Mirror the app composition: base + web-app + the plugin, in bundle order.
