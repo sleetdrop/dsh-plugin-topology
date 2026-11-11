@@ -122,6 +122,12 @@ once into a cache directory (npmmirror mirror, Google fallback). See the
 script header for exact usage. Every maintained line's current target should
 pass the harness before any release is tagged.
 
+`--plugin <dir>` installs a `file:` dependency, which pnpm copies at install
+time rather than symlinking: rebuild the checkout, then re-run the harness
+(each run gets a fresh sandbox, so this is automatic). To validate the exact
+shipping artifact instead, pack it (`pnpm pack`) and pass the `.tgz` path as
+`--plugin`.
+
 ## Answering user reports
 
 A "no panel on DSH $V" report is handled in this order:
